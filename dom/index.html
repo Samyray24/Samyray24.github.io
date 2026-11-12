@@ -118,6 +118,11 @@ ol.steps span{color:var(--ink2)}
 .variant-head{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:end;justify-content:space-between;margin-bottom:14px}
 .variant-head h2{font-size:clamp(18px,3vw,24px);margin:0}
 .variant-head p{margin:4px 0 0;color:var(--ink2);max-width:68ch}
+.model-bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:10px}
+.model-bar label{font-weight:500}
+.model-bar select,.model-open{font:inherit;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:3px;padding:7px 10px}
+.model-open{cursor:pointer;text-decoration:none}
+.model-open:hover,.model-bar select:hover{border-color:var(--wood)}
 .variant-facts{display:flex;flex-wrap:wrap;gap:8px 20px;font-family:var(--f-mono);font-size:12px;color:var(--ink2)}
 .variant-facts b{display:block;font-size:18px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
 .variant-details{margin-top:18px}
@@ -157,6 +162,17 @@ ol.steps span{color:var(--ink2)}
   </nav>
 
   <section id="v-3d">
+    <div class="model-bar">
+      <label for="model-variant">Планировка в 3D</label>
+      <select id="model-variant">
+        <option value="0">1 · Исходный, 97,4 м²</option>
+        <option value="1">2 · Ровная сетка, 100 м²</option>
+        <option value="2">3 · Продольный, 102,5 м²</option>
+        <option value="3">4 · Компактный, 100 м²</option>
+        <option value="4">5 · Большая гостиная, 104 м²</option>
+        <option value="5">6 · Просторный, 120 м²</option>
+      </select>
+    </div>
     <div class="stage" id="stage">
       <div class="hint"><span>Вращать пальцем или мышью, приближать щипком или колесом</span></div>
       <div class="tools">
@@ -188,6 +204,7 @@ ol.steps span{color:var(--ink2)}
     <div class="variant-head">
       <div><h2 id="variant-title"></h2><p id="variant-description"></p></div>
       <div class="variant-facts" id="variant-facts"></div>
+      <button type="button" class="model-open" id="variant-3d">Открыть этот вариант в 3D</button>
     </div>
     <div class="sheet scroll" id="variant-plan"></div>
     <p class="cap">Схемы в метрах по осям стен. Терраса входит в контур крыши, но не в отапливаемую площадь; гараж показан отдельно. Сверху сад, снизу улица.</p>
@@ -214,7 +231,7 @@ ol.steps span{color:var(--ink2)}
         </table>
       </div>
     </div>
-    <div class="note" style="margin-top:12px"><b>Важно:</b> это концептуальные схемы для выбора планировки, а не рабочие чертежи. 3D-модель, посадка на участке и подробная смета на соседних вкладках относятся к исходному варианту 1. Для новых вариантов конструктив, окна, двери и смету нужно разработать после выбора схемы.</div>
+    <div class="note" style="margin-top:12px"><b>Важно:</b> это концептуальные схемы для выбора планировки, а не рабочие чертежи. 3D-модель доступна для каждого варианта через кнопку выше. Посадка на участке и подробная смета на соседних вкладках относятся к исходному варианту 1. Перед строительством выбранную схему нужно адаптировать к участку и разработать конструктив и инженерные разделы.</div>
   </section>
 
   <section id="v-site" hidden>
@@ -1554,6 +1571,7 @@ const FENCE_Y=D+5;                         // 15,8
 const WICKET=[4.4,5.6];
 const TREES_OUT=[[1.4,16.8,.9],[8.4,16.8,1.0],[11.4,16.8,.9],[13.9,16.8,.8]];
 const TREES_IN=[[-2.5,-8,1.4],[3.5,-14,1.6],[10.5,-9,1.5],[12.5,-19,1.3],[1,-21,1.2],[13,4,1.1],[7,-5,1.0]];
+const BASE_WALLS=WALLS,BASE_FUR=FUR,BASE_NICHE=NICHE,BASE_PLOT=PLOT,BASE_FENCE_Y=FENCE_Y,BASE_WICKET=WICKET,BASE_TREES_OUT=TREES_OUT,BASE_TREES_IN=TREES_IN;
 
 /* ---------- Экспликация ---------- */
 const HOUSE_AREA=ROOMS.filter(r=>!r.out).reduce((s,r)=>s+r.w*r.h,0);
@@ -1657,6 +1675,11 @@ function buildPlan(){
 document.getElementById('plan').innerHTML=buildPlan();
 
 /* ---------- Варианты планировок ---------- */
+const dH=(c,p,w=.9,sw=1)=>({hor:1,c,p,w,k:'door',s:0,h:2.1,sw});
+const dV=(c,p,w=.9,sw=1)=>({hor:0,c,p,w,k:'door',s:0,h:2.1,sw});
+const wH=(c,p,w=1.6)=>({hor:1,c,p,w,k:'win',s:.8,h:1.4});
+const wV=(c,p,w=1.6)=>({hor:0,c,p,w,k:'win',s:.8,h:1.4});
+const tV=(c,p,w=1.8)=>({hor:0,c,p,w,k:'gdoor',s:0,h:2.3});
 const VARIANTS=[
  {name:'Исходный',title:'Вариант 1 · Исходный эскиз',description:'Планировка, которая уже была на сайте: 97,4 м² дома, терраса 19 м² и гараж 33,6 м².',w:W,d:D,rooms:ROOMS,garage:ANNEX,original:true,
   features:['<b>Кухня-гостиная 33,6 м²</b> с панорамным остеклением и выходом на террасу.','<b>Две спальни 15,5 и 19,5 м²</b>, совмещённый санузел 9,6 м² и большой гардероб 11,2 м².','<b>Гараж 33,6 м²</b> с местом для котла и внутренней дверью из гардероба.']},
@@ -1669,17 +1692,19 @@ const VARIANTS=[
    {n:'Ванная и туалет',x:8,y:5,w:1.8,h:3,f:'tile',lines:['Ванная','и туалет']},
    {n:'Гардероб',x:9.8,y:5,w:2.2,h:3,f:'wood'},
    {n:'Прихожая',x:8,y:8,w:4,h:2,f:'tile'}],
+  ops:[wH(0,3,3),wV(0,2.5,3.2),tV(8,2.5,2),wH(10,2),wH(10,6),wV(0,7.5,1.5),dH(5,2),dH(5,6),dH(8,8.9,.8),dH(8,10.9,.8),dH(10,10,1)],garageDoor:9,
   features:['<b>Кухня-гостиная 40 м²</b> и две равные спальни по 20 м² — удобно для семьи с двумя детьми или кабинета во второй спальне.','<b>Санузел 5,4 м² и гардероб 6,6 м²</b> собраны рядом с прихожей 8 м² и гаражом.','<b>Терраса 20 м²</b> примыкает к общей зоне. Общая площадь дома без террасы и гаража — ровно 100 м².']},
  {name:'Продольный',title:'Вариант 3 · Продольный дом 15 × 8 м',description:'Вытянутый корпус для широкого участка: спальни в одном ряду, отдельная постирочная и длинная терраса в садовой части.',w:15,d:8,garage:{x:15,y:2,w:4,h:6},entry:{x:11.5,y:8},
   rooms:[
    {n:'Зал и кухня',x:0,y:0,w:8,h:5,f:'wood'},
-   {n:'Ванная и туалет',x:8,y:0,w:4,h:2.5,f:'tile',lines:['Ванная','и туалет']},
-   {n:'Гардероб',x:12,y:0,w:3,h:2.5,f:'wood'},
-   {n:'Терраса',x:8,y:2.5,w:7,h:2.5,f:'deck',out:1},
+   {n:'Терраса',x:8,y:0,w:7,h:2.5,f:'deck',out:1},
+   {n:'Ванная и туалет',x:8,y:2.5,w:4,h:2.5,f:'tile',lines:['Ванная','и туалет']},
+   {n:'Гардероб',x:12,y:2.5,w:3,h:2.5,f:'wood'},
    {n:'Спальня 1',x:0,y:5,w:5,h:3,f:'wood'},
    {n:'Спальня 2',x:5,y:5,w:5,h:3,f:'wood'},
    {n:'Прихожая',x:10,y:5,w:3,h:3,f:'tile'},
    {n:'Постирочная',x:13,y:5,w:2,h:3,f:'tile'}],
+  ops:[wH(0,3,3),wV(0,2.5,3.2),tV(8,1.25,1.8),wH(8,2.5),wH(8,7.5),dH(5,2.5),dV(10,6.5),dH(5,11.5),dH(5,12.5,.8),dV(13,6.5,.8),dH(8,11.5,1)],garageDoor:6.5,
   features:['<b>Кухня-гостиная 40 м²</b>, две спальни по 15 м², санузел 10 м² и гардероб 7,5 м².','<b>Дополнительная постирочная 6 м²</b> разгружает санузел; прихожая 9 м² связывает вход с комнатами.','<b>Дом 102,5 м²</b>, терраса 17,5 м² и гараж 24 м². Глубина корпуса 8 м упрощает продольную схему, но требует более широкой пятна застройки.']},
  {name:'Компактный',title:'Вариант 4 · Компактный дом 11 × 10 м',description:'Самый небольшой контур из новых вариантов: ровно 100 м² дома, небольшая терраса и пристроенный гараж 24 м².',w:11,d:10,garage:{x:11,y:4,w:4,h:6},entry:{x:9.5,y:10},
   rooms:[
@@ -1690,6 +1715,7 @@ const VARIANTS=[
    {n:'Спальня 2',x:4,y:5,w:4,h:5,f:'wood'},
    {n:'Гардероб',x:8,y:5,w:3,h:2,f:'wood'},
    {n:'Прихожая',x:8,y:7,w:3,h:3,f:'tile'}],
+  ops:[wH(0,3,3),wV(0,2.5,3.2),tV(7,1.25,1.8),wH(10,2),wH(10,6),dH(5,2),dH(5,6),dV(7,3.5),dH(7,9.5),dH(10,9.5,1)],garageDoor:8.5,
   features:['<b>Две спальни по 20 м²</b>, кухня-гостиная 35 м² и вместительный совмещённый санузел 10 м².','<b>Гардероб 6 м²</b> находится у спален, прихожая 9 м² имеет отдельный вход с улицы и сообщение с гаражом.','<b>Терраса 10 м²</b> — самая компактная. Вместе с гаражом общая расчётная площадь контура составляет 134 м².']},
  {name:'Большая гостиная',title:'Вариант 5 · Большая кухня-гостиная 12 × 10 м',description:'Вариант с акцентом на общую зону: почти половина отапливаемого дома отведена кухне и гостиной.',w:12,d:10,garage:{x:12,y:4,w:4,h:6},entry:{x:10,y:10},
   rooms:[
@@ -1700,29 +1726,92 @@ const VARIANTS=[
    {n:'Спальня 2',x:4,y:6,w:4,h:4,f:'wood'},
    {n:'Гардероб',x:8,y:6,w:4,h:2,f:'wood'},
    {n:'Прихожая',x:8,y:8,w:4,h:2,f:'tile'}],
+  ops:[wH(0,3,3),wV(0,3,3.2),tV(8,2,1.8),wH(10,2),wH(10,6),dH(6,2),dH(6,6),dV(8,5),dH(8,10),dH(10,10,1)],garageDoor:9,
   features:['<b>Кухня-гостиная 48 м²</b> — самая большая среди вариантов до 110 м²; терраса 16 м² продолжает общую зону.','<b>Две спальни по 16 м²</b>, санузел 8 м², гардероб 8 м² и прихожая 8 м².','<b>Дом 104 м²</b> — запас по площади по сравнению со 100-метровыми вариантами ушёл прежде всего в общую зону и хранение.']},
- {name:'120 м²',title:'Вариант 6 · Просторный дом 14 × 10 м',description:'Вариант площадью 120 м² с увеличенной общей зоной, двумя большими спальнями и отдельной постирочной.',w:14,d:10,garage:{x:14,y:4,w:4,h:6},entry:{x:9.5,y:10},
+ {name:'120 м²',title:'Вариант 6 · Просторный дом 14 × 10 м',description:'Вариант площадью 120 м² с увеличенной общей зоной, двумя большими спальнями и отдельным хозяйственным блоком у гаража.',w:14,d:10,garage:{x:14,y:4,w:4,h:6},entry:{x:9,y:10},
   rooms:[
    {n:'Зал и кухня',x:0,y:0,w:10,h:5,f:'wood'},
    {n:'Терраса',x:10,y:0,w:4,h:5,f:'deck',out:1},
    {n:'Спальня 1',x:0,y:5,w:4,h:5,f:'wood'},
    {n:'Спальня 2',x:4,y:5,w:4,h:5,f:'wood'},
-   {n:'Ванная и туалет',x:8,y:5,w:3,h:2.5,f:'tile',lines:['Ванная','и туалет']},
-   {n:'Гардероб',x:11,y:5,w:3,h:2.5,f:'wood'},
-   {n:'Прихожая',x:8,y:7.5,w:3,h:2.5,f:'tile'},
-   {n:'Постирочная',x:11,y:7.5,w:3,h:2.5,f:'tile'}],
-  features:['<b>Кухня-гостиная 50 м²</b> и две спальни по 20 м² — самый просторный вариант на сайте.','<b>Санузел, гардероб, прихожая и постирочная</b> занимают по 7,5 м² каждое помещение.','<b>Дом 120 м²</b>, терраса 20 м² и гараж 24 м²; общая расчётная площадь по осям — 164 м².']}
+   {n:'Прихожая',x:8,y:5,w:2,h:5,f:'tile'},
+   {n:'Ванная и туалет',x:10,y:5,w:4,h:2.5,f:'tile',lines:['Ванная','и туалет']},
+   {n:'Гардероб',x:10,y:7.5,w:4,h:2.5,f:'wood'}],
+  ops:[wH(0,4,3.2),wV(0,2.5,3.2),tV(10,2.5,2),wH(10,2),wH(10,6),dH(5,2),dH(5,6),dV(10,6.25),dV(10,8.75),dH(10,9,1)],garageDoor:8.75,
+  features:['<b>Кухня-гостиная 50 м²</b> и две спальни по 20 м² — самый просторный вариант на сайте.','<b>Санузел 10 м² и гардероб 10 м²</b> открываются в прихожую 10 м²; гараж сообщается с гардеробом, как в исходном проекте.','<b>Дом 120 м²</b>, терраса 20 м² и гараж 24 м²; общая расчётная площадь по осям — 164 м².']}
 ];
 const variantHouse=v=>v.rooms.filter(r=>!r.out).reduce((s,r)=>s+r.w*r.h,0);
 const variantTerrace=v=>v.rooms.filter(r=>r.out).reduce((s,r)=>s+r.w*r.h,0);
 const variantTotal=v=>variantHouse(v)+variantTerrace(v)+v.garage.w*v.garage.h;
+function variantWalls(v){
+  const edges=[];
+  v.rooms.filter(r=>!r.out).forEach(r=>{
+    edges.push({hor:1,c:r.y,s:r.x,e:r.x+r.w},{hor:1,c:r.y+r.h,s:r.x,e:r.x+r.w},{hor:0,c:r.x,s:r.y,e:r.y+r.h},{hor:0,c:r.x+r.w,s:r.y,e:r.y+r.h});
+  });
+  const groups=new Map();
+  edges.forEach(e=>{const k=(e.hor?'h':'v')+':'+e.c;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(e)});
+  const walls=[];
+  groups.forEach(list=>{
+    const cuts=[...new Set(list.flatMap(e=>[e.s,e.e]))].sort((a,b)=>a-b);
+    let start=null,count=0;
+    const flush=end=>{if(start===null||end<=start)return;const hor=list[0].hor,c=list[0].c;
+      const wall={a:hor?[start,c]:[c,start],b:hor?[end,c]:[c,end],t:count>1?.1:.4,ext:count===1,ex:[0,0],o:[]};
+      [...v.ops,dV(v.garage.x,v.garageDoor)].forEach(q=>{if(q.hor===hor&&Math.abs(q.c-c)<.001&&q.p>=start&&q.p<=end)wall.o.push({...q})});
+      walls.push(wall);start=null;};
+    for(let i=0;i<cuts.length-1;i++){
+      const a=cuts[i],b=cuts[i+1],mid=(a+b)/2,n=list.filter(e=>e.s<mid&&e.e>mid).length;
+      if(start===null){start=a;count=n}else if(n!==count){flush(a);start=a;count=n}
+    }
+    flush(cuts.at(-1));
+  });
+  const g=v.garage, gd=v.garageDoor;
+  walls.push(
+    {a:[g.x,g.y],b:[g.x+g.w,g.y],t:.3,ext:1,gar:1,ex:[0,0],o:[]},
+    {a:[g.x,g.y],b:[g.x,g.y+g.h],t:.3,ext:1,gar:1,ex:[0,0],o:[{...dV(g.x,gd)}]},
+    {a:[g.x+g.w,g.y],b:[g.x+g.w,g.y+g.h],t:.3,ext:1,gar:1,ex:[0,0],o:[{p:g.y+2,w:.8,s:1.4,h:.6,k:'win'}]},
+    {a:[g.x,g.y+g.h],b:[g.x+g.w,g.y+g.h],t:.3,ext:1,gar:1,ex:[0,0],o:[{p:g.x+g.w/2,w:3,s:0,h:2.4,k:'gate'}]}
+  );
+  return walls;
+}
+function variantFurniture(v){
+  const out=[];
+  v.rooms.forEach(r=>{
+    if(r.n==='Зал и кухня'){
+      out.push({x:r.x+.3,y:r.y+r.h-.9,w:Math.min(4,r.w-.6),d:.6,h:.9,col:0xe5e1d8,kit:1},
+        {x:r.x+.7,y:r.y+1.5,w:3,d:.9,h:.8,col:0x6d7a82,pil:1},
+        {x:r.x+1,y:r.y+.2,w:2,d:.35,h:.5,col:0x2a2e33},
+        {x:r.x+r.w-2.7,y:r.y+1.2,w:1.8,d:.9,h:.75,sh:'o',col:0xb87a45});
+    }else if(/^Спальня/.test(r.n)){
+      out.push({x:r.x+r.w/2-.8,y:r.y+.35,w:1.6,d:2,h:.5,col:0xd9d2c4,bed:1},
+        {x:r.x+.2,y:r.y+r.h-.65,w:1.8,d:.5,h:2.1,col:0xe5e1d8});
+    }else if(r.n==='Ванная и туалет'){
+      out.push({x:r.x+.15,y:r.y+.2,w:Math.min(1.7,r.w-.3),d:.72,h:.55,col:0xf2f2ef},
+        {x:r.x+.2,y:r.y+r.h-.85,w:.42,d:.62,h:.4,col:0xf2f2ef},
+        {x:r.x+r.w-.75,y:r.y+r.h-.75,w:.55,d:.5,h:.85,col:0xf2f2ef});
+    }else if(r.n==='Гардероб'){
+      out.push({x:r.x+.15,y:r.y+.15,w:r.w-.3,d:.5,h:2,col:0xd9d4ca,hatch:1});
+    }else if(r.n==='Прихожая'){
+      out.push({x:r.x+.15,y:r.y+.15,w:Math.min(1.6,r.w-.3),d:.5,h:1.8,col:0xd9d4ca,hatch:1});
+    }else if(r.n==='Постирочная'){
+      out.push({x:r.x+.2,y:r.y+.25,w:.65,d:.65,h:.85,col:0xf2f2ef},{x:r.x+.95,y:r.y+.25,w:.65,d:.65,h:.85,col:0xf2f2ef});
+    }else if(r.out){
+      out.push({x:r.x+r.w/2-.8,y:r.y+r.h/2-.45,w:1.6,d:.9,h:.75,sh:'o',col:0x2c3238});
+    }
+  });
+  return out;
+}
 function buildVariantPlan(v){
   if(v.original)return buildPlan();
   const g=v.garage, minX=Math.min(-1.8,g.x-1.8), maxX=Math.max(v.w+2,g.x+g.w+1.8), maxY=Math.max(v.d,g.y+g.h)+2.1;
   let s=`<svg viewBox="${minX} -2.3 ${maxX-minX} ${maxY+2.3}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${v.title}">`+DEFS;
-  v.rooms.forEach(r=>s+=`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="var(${FILL[r.f]})" stroke="var(--wall)" stroke-width=".07"/>`);
-  s+=`<rect x="0" y="0" width="${v.w}" height="${v.d}" fill="none" stroke="var(--wall)" stroke-width=".18"/>`;
-  s+=`<rect x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" fill="var(--fl-tile)" stroke="var(--wall)" stroke-width=".18"/>`;
+  v.rooms.forEach(r=>s+=`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="var(${FILL[r.f]})"/>`);
+  s+=`<rect x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" fill="var(--fl-tile)"/>`;
+  variantFurniture(v).forEach(f=>s+=furPlan(f));
+  variantWalls(v).forEach(w=>s+=planWall(w));
+  v.rooms.filter(r=>r.out).forEach(r=>{
+    s+=`<path d="M${r.x} ${r.y} H${r.x+r.w} V${r.y+r.h}" fill="none" stroke="var(--ink2)" stroke-width=".05" stroke-dasharray=".22 .12"/>`;
+    [[r.x+r.w-.08,r.y+.08],[r.x+r.w-.08,r.y+r.h-.08]].forEach(p=>s+=`<rect x="${p[0]-.1}" y="${p[1]-.1}" width=".2" height=".2" fill="var(--anth)"/>`);
+  });
   s+=`<rect x="${g.x+.7}" y="${g.y+1.8}" width="${g.w-1.4}" height="3.8" rx=".45" fill="var(--furn)" stroke="var(--ink2)" stroke-width=".035"/><rect x="${g.x+1}" y="${g.y+2.5}" width="${g.w-2}" height="1.4" rx=".2" fill="none" stroke="var(--ink2)" stroke-width=".03"/>`;
   s+=`<text x="${g.x+g.w/2}" y="${g.y+.75}" font-size=".3" text-anchor="middle" font-weight="600">Гараж</text><text class="mono" x="${g.x+g.w/2}" y="${g.y+1.15}" font-size=".24" text-anchor="middle" style="fill:var(--ink2)">${fm(g.w*g.h)} м²</text>`;
   s+=`<line x1="${g.x+.5}" y1="${g.y+g.h}" x2="${g.x+g.w-.5}" y2="${g.y+g.h}" stroke="var(--wood)" stroke-width=".16"/><text x="${g.x+g.w/2}" y="${g.y+g.h+.55}" font-size=".24" text-anchor="middle">ворота 3,0 м</text>`;
@@ -1739,8 +1828,11 @@ function buildVariantPlan(v){
   s+=dim(g.x,g.y+g.h+1.15,g.x+g.w,g.y+g.h+1.15,fm(g.w)+' м',.24);
   return s+'</svg>';
 }
+let activeVariant=0;
 function renderVariant(index){
+  activeVariant=index;
   const v=VARIANTS[index], house=variantHouse(v), terrace=variantTerrace(v), garage=v.garage.w*v.garage.h;
+  document.getElementById('model-variant').value=String(index);
   document.querySelectorAll('[data-variant]').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.variant===index));
   document.getElementById('variant-title').textContent=v.title;
   document.getElementById('variant-description').textContent=v.description;
@@ -1906,9 +1998,17 @@ renderEst();
 /* ---------- 3D ---------- */
 let g3=null;
 function init3d(){
-  if(g3)return; const stage=document.getElementById('stage');
+  if(g3)return; const stage=document.getElementById('stage'),model=VARIANTS[activeVariant],modelIndex=activeVariant;
+  const W=model.w,D=model.d,ROOMS=model.rooms,ANNEX=model.garage;
+  const WALLS=model.original?BASE_WALLS:variantWalls(model),FUR=model.original?BASE_FUR:variantFurniture(model);
+  const NICHE=model.original?BASE_NICHE:{x:model.entry.x-1,y:D-1,w:2,h:1};
+  const minX=Math.min(0,ANNEX.x),maxX=Math.max(W,ANNEX.x+ANNEX.w);
+  const PLOT=model.original?BASE_PLOT:{x:minX-3,y:-18,w:maxX-minX+6,d:D+26};
+  const FENCE_Y=model.original?BASE_FENCE_Y:D+5,WICKET=model.original?BASE_WICKET:[model.entry.x-.6,model.entry.x+.6];
+  const TREES_IN=model.original?BASE_TREES_IN:[[minX-1,-8,1.4],[W/2,-12,1.6],[maxX+1,-7,1.4],[maxX+1,2,1.1]];
+  const TREES_OUT=model.original?BASE_TREES_OUT:[[minX,FENCE_Y+1,.9],[maxX,FENCE_Y+1,1]];
   let renderer;
-  try{ renderer=new THREE.WebGLRenderer({antialias:true}); }catch(e){ stage.insertAdjacentHTML('afterbegin','<div class="nogl">3D не запустилось в этом браузере. План, участок и смета открываются на соседних вкладках.</div>'); g3={}; return; }
+  try{ renderer=new THREE.WebGLRenderer({antialias:true}); }catch(e){ stage.insertAdjacentHTML('afterbegin','<div class="nogl">3D не запустилось в этом браузере. План, участок и смета открываются на соседних вкладках.</div>'); g3={index:modelIndex}; return; }
   renderer.setPixelRatio(Math.min(devicePixelRatio||1,2)); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   stage.insertBefore(renderer.domElement,stage.firstChild);
   const scene=new THREE.Scene(); scene.background=new THREE.Color(0xcfe2f1); scene.fog=new THREE.Fog(0xcfe2f1,60,140);
@@ -1927,15 +2027,17 @@ function init3d(){
   const led=new THREE.MeshStandardMaterial({color:0xfff0d0,emissive:0xffc27a,emissiveIntensity:0});
   const box=(g,w,h,d,m,x,y,z,sh=true)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=sh;o.receiveShadow=true;g.add(o);return o};
 
-  const world=new THREE.Group(); world.position.set(-5.5,0,-6.5); scene.add(world);   // план → мир
+  const world=new THREE.Group(); world.position.set(model.original?-5.5:-(minX+maxX)/2,0,model.original?-6.5:-(Math.min(0,ANNEX.y)+Math.max(D,ANNEX.y+ANNEX.h))/2); scene.add(world);   // план → мир
   const gnd=new THREE.Mesh(new THREE.PlaneGeometry(300,300),mat.grass); gnd.rotation.x=-Math.PI/2; gnd.position.set(5,-.02,0); gnd.receiveShadow=true; world.add(gnd);
   const P_=PLOT; box(world,P_.w,.04,P_.d,mat.lawn,P_.x+P_.w/2,0,P_.y+P_.d/2,false);
   box(world,80,.03,7,mat.asph,5,.0,FENCE_Y+8.5,false);
-  box(world,4.6,.06,4.0,mat.conc,-2.1,.03,FENCE_Y+2,false);       // заезд
-  box(world,1.0,.06,FENCE_Y-D-.9,mat.conc,5.0,.03,(D+.9+FENCE_Y)/2,false);  // дорожка
+  box(world,4.6,.06,4.0,mat.conc,ANNEX.x+ANNEX.w/2,.03,FENCE_Y+2,false);       // заезд
+  box(world,1.0,.06,FENCE_Y-D-.9,mat.conc,NICHE.x+NICHE.w/2,.03,(D+.9+FENCE_Y)/2,false);  // дорожка
   // забор
   const fh=1.6, fz=(x1,x2,z,m=mat.fence)=>box(world,x2-x1,fh,.06,m,(x1+x2)/2,fh/2,z);
-  fz(P_.x,ANNEX.x-.15,FENCE_Y); fz(.15,WICKET[0],FENCE_Y); fz(WICKET[1],P_.x+P_.w,FENCE_Y);
+  const gateL=model.original?ANNEX.x-.15:ANNEX.x+ANNEX.w/2-2.25,gateR=model.original?.15:ANNEX.x+ANNEX.w/2+2.25;
+  if(model.original){fz(P_.x,gateL,FENCE_Y); fz(gateR,WICKET[0],FENCE_Y); fz(WICKET[1],P_.x+P_.w,FENCE_Y)}
+  else{fz(P_.x,WICKET[0],FENCE_Y); fz(WICKET[1],gateL,FENCE_Y); fz(gateR,P_.x+P_.w,FENCE_Y)}
   for(let x=WICKET[0];x<WICKET[1]-.01;x+=.14)box(world,.09,fh,.05,mat.gate,x+.07,fh/2,FENCE_Y,false);
   box(world,P_.w,fh,.06,mat.fence,P_.x+P_.w/2,fh/2,P_.y); box(world,.06,fh,P_.d,mat.fence,P_.x,fh/2,P_.y+P_.d/2); box(world,.06,fh,P_.d,mat.fence,P_.x+P_.w,fh/2,P_.y+P_.d/2);
   // деревья
@@ -1946,7 +2048,7 @@ function init3d(){
     world.add(tr);};
   TREES_IN.forEach((t,i)=>tree(t[0],t[1],t[2],i)); TREES_OUT.forEach((t,i)=>tree(t[0],t[1],t[2]*.9,i+1));
   // машина на парковке
-  const car=new THREE.Group(); car.position.set(-2.1,F,13.0);
+  const car=new THREE.Group(); car.position.set(ANNEX.x+ANNEX.w/2,F,ANNEX.y+ANNEX.h-2.8);
   const cm=M(0x4b5560,.35,.5); box(car,1.85,.62,4.3,cm,0,.62,0); box(car,1.6,.55,2.1,cm,0,1.18,.15); box(car,1.62,.42,1.9,glass,0,1.18,.15,false);
   [[-.85,-1.35],[.85,-1.35],[-.85,1.35],[.85,1.35]].forEach(p=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(.33,.33,.24,14),mat.frame);w.rotation.z=Math.PI/2;w.position.set(p[0],.33,p[1]);car.add(w)}); world.add(car);
 
@@ -1977,12 +2079,18 @@ function init3d(){
   }
   WALLS.forEach(addWall);
   // цоколь тёмной полосой
-  box(house,6.4,.45,.02,mat.plinth,3,.22,-.21,false);
-  box(house,4.2,.45,.02,mat.plinth,2.0,.22,D+.21,false); box(house,5.2,.45,.02,mat.plinth,8.6,.22,D+.21,false);
-  box(house,.02,.45,7.8,mat.plinth,-.21,.22,3.9,false); box(house,.02,.45,D-3.6,mat.plinth,W+.21,.22,(3.6+D)/2+.1,false);
+  if(model.original){
+    box(house,6.4,.45,.02,mat.plinth,3,.22,-.21,false);
+    box(house,4.2,.45,.02,mat.plinth,2.0,.22,D+.21,false); box(house,5.2,.45,.02,mat.plinth,8.6,.22,D+.21,false);
+    box(house,.02,.45,7.8,mat.plinth,-.21,.22,3.9,false); box(house,.02,.45,D-3.6,mat.plinth,W+.21,.22,(3.6+D)/2+.1,false);
+  }else{
+    box(house,W+.1,.45,.02,mat.plinth,W/2,.22,-.21,false); box(house,W+.1,.45,.02,mat.plinth,W/2,.22,D+.21,false);
+    box(house,.02,.45,D,mat.plinth,-.21,.22,D/2,false); box(house,.02,.45,D,mat.plinth,W+.21,.22,D/2,false);
+  }
   // ниша входа: деревянная облицовка, подсветка, ступени
   const slats=(x0,x1,z,face,y1=H)=>{ for(let x=x0;x<=x1;x+=.12)box(house,.07,y1-F,.06,mat.wood,x,(F+y1)/2,z+face*.25,false); };
-  slats(6.6,10.6,3.8,-1);
+  const terrace=ROOMS.find(r=>r.out);
+  if(terrace)slats(terrace.x+.4,terrace.x+terrace.w-.4,terrace.y+terrace.h,-1);
   const N_=NICHE, nb=N_.y+.21;
   box(house,.3,H-F,.03,mat.wood,N_.x+.35,(H+F)/2,nb,false); box(house,.3,H-F,.03,mat.wood,N_.x+N_.w-.35,(H+F)/2,nb,false);
   box(house,1.0,H-F-2.1-F+.15,.03,mat.wood,N_.x+1,(F+2.1+H)/2,nb,false);
@@ -1990,10 +2098,11 @@ function init3d(){
   box(house,N_.w-.4,.03,N_.h-.2,mat.woodD,N_.x+N_.w/2,H-.02,N_.y+.2+(N_.h-.2)/2,false);
   [N_.x+.2,N_.x+N_.w-.2].forEach(x=>box(house,.04,H-.3,.04,led,x,H/2,D+.21,false));
   box(house,N_.w-.4,F,N_.h-.2,mat.conc,N_.x+N_.w/2,F/2+.01,N_.y+.2+(N_.h-.2)/2,false);
-  box(house,2.2,F*.66,.5,mat.conc,5.0,F*.33,D+.25); box(house,2.5,F*.33,.4,mat.conc,5.0,F*.16,D+.7);
-  box(house,2.2,F,.55,mat.conc,8.4,F/2,-.48); box(house,2.5,.07,.4,mat.conc,8.4,.035,-.95);
-  [[W-.1,.1],[W-.1,3.65],[9.9,.1],[6.1,.1]].forEach(p=>box(house,.16,H,.16,mat.dark,p[0],H/2,p[1]));
-  [[4.32,9.95],[5.68,9.95]].forEach(p=>box(house,.06,.16,.1,glow,p[0],2.1,p[1],false));
+  box(house,2.2,F*.66,.5,mat.conc,NICHE.x+NICHE.w/2,F*.33,D+.25); box(house,2.5,F*.33,.4,mat.conc,NICHE.x+NICHE.w/2,F*.16,D+.7);
+  if(terrace){const tx=terrace.x+terrace.w/2,tz=terrace.y-.48;box(house,2.2,F,.55,mat.conc,tx,F/2,tz); box(house,2.5,.07,.4,mat.conc,tx,.035,tz-.47)}
+  const posts=model.original?[[W-.1,.1],[W-.1,3.65],[9.9,.1],[6.1,.1]]:[[terrace.x+terrace.w-.1,terrace.y+.1],[terrace.x+terrace.w-.1,terrace.y+terrace.h-.1],[terrace.x+.1,terrace.y+.1]];
+  posts.forEach(p=>box(house,.16,H,.16,mat.dark,p[0],H/2,p[1]));
+  [[NICHE.x+.32,D-.85],[NICHE.x+NICHE.w-.32,D-.85]].forEach(p=>box(house,.06,.16,.1,glow,p[0],2.1,p[1],false));
   // гараж: пол, крыша с деревянной подшивкой
   const A=ANNEX, gr=new THREE.Group(); house.add(gr);
   box(gr,A.w,F,A.h,mat.conc,A.x+A.w/2,F/2,A.y+A.h/2);
@@ -2034,7 +2143,8 @@ function init3d(){
     box(roofG,W+2*o,.22,.06,mat.dark,W/2,H+.1,ez0); box(roofG,W+2*o,.22,.06,mat.dark,W/2,H+.1,ez1);
     box(roofG,.06,.22,D+2*o,mat.dark,ex0,H+.1,D/2); box(roofG,.06,.22,D+2*o,mat.dark,ex1,H+.1,D/2);
   })();
-  const lamps=[[3,2.4,2.5,1.0],[8.6,2.4,1.9,.7],[9,2.4,8.8,.6],[5,2.4,10.3,.5]].map(p=>{const l=new THREE.PointLight(0xffc27a,0,10,2);l.position.set(p[0],p[1],p[2]);l.userData.i=p[3];house.add(l);return l});
+  const lampData=model.original?[[3,2.4,2.5,1.0],[8.6,2.4,1.9,.7],[9,2.4,8.8,.6],[5,2.4,10.3,.5]]:ROOMS.filter(r=>!r.out).map(r=>[r.x+r.w/2,2.4,r.y+r.h/2,.45]);
+  const lamps=lampData.map(p=>{const l=new THREE.PointLight(0xffc27a,0,10,2);l.position.set(p[0],p[1],p[2]);l.userData.i=p[3];house.add(l);return l});
 
   const bRoof=document.getElementById('b-roof'), bNight=document.getElementById('b-night');
   function night(on){
@@ -2046,7 +2156,7 @@ function init3d(){
     lamps.forEach(l=>l.intensity=on?l.userData.i:0);
   }
   // точки обзора в мировых координатах (дом в центре)
-  const views={main:[[-13,9.5,22],[-1.5,1.2,2.5]],front:[[.5,4.8,20],[.5,1.3,3]],back:[[14,6,-12],[1.5,1.4,-2]],top:[[0.01,30,4],[-1,0,4]]};
+  const span=Math.max(W,D,maxX-minX),views=model.original?{main:[[-13,9.5,22],[-1.5,1.2,2.5]],front:[[.5,4.8,20],[.5,1.3,3]],back:[[14,6,-12],[1.5,1.4,-2]],top:[[0.01,30,4],[-1,0,4]]}:{main:[[-span*.9,span*.65,span*1.25],[0,1.2,0]],front:[[0,5,span*1.2],[0,1.3,0]],back:[[span,7,-span*.85],[0,1.4,0]],top:[[.01,span*2.1,0],[0,0,0]]};
   const nar=()=>stage.clientWidth<600;
   function fly(key){
     const v=views[key], k=nar()&&key!=='top'?1.45:1, p0=camera.position.clone(), t0=controls.target.clone();
@@ -2055,13 +2165,23 @@ function init3d(){
       camera.position.lerpVectors(p0,p1,e); controls.target.lerpVectors(t0,t1,e); controls.update(); if(q<1)requestAnimationFrame(step);})(st);
   }
   function setView(key){const v=views[key],k=nar()?1.45:1,t=new THREE.Vector3(...v[1]); camera.position.copy(new THREE.Vector3(...v[0]).sub(t).multiplyScalar(k).add(t)); controls.target.copy(t); controls.update();}
-  stage.querySelectorAll('[data-cam]').forEach(b=>b.addEventListener('click',()=>fly(b.dataset.cam)));
-  bRoof.addEventListener('click',()=>{const off=bRoof.getAttribute('aria-pressed')!=='true'; roofG.visible=!off; gRoof.visible=!off; bRoof.setAttribute('aria-pressed',off); bRoof.textContent=off?'Вернуть крышу':'Снять крышу'; if(off)fly('top')});
-  bNight.addEventListener('click',()=>{const on=bNight.getAttribute('aria-pressed')!=='true'; bNight.setAttribute('aria-pressed',on); bNight.textContent=on?'День':'Вечер'; night(on)});
+  stage.querySelectorAll('[data-cam]').forEach(b=>b.onclick=()=>fly(b.dataset.cam));
+  bRoof.setAttribute('aria-pressed','false'); bRoof.textContent='Снять крышу';
+  bNight.setAttribute('aria-pressed','false'); bNight.textContent='Вечер';
+  bRoof.onclick=()=>{const off=bRoof.getAttribute('aria-pressed')!=='true'; roofG.visible=!off; gRoof.visible=!off; bRoof.setAttribute('aria-pressed',off); bRoof.textContent=off?'Вернуть крышу':'Снять крышу'; if(off)fly('top')};
+  bNight.onclick=()=>{const on=bNight.getAttribute('aria-pressed')!=='true'; bNight.setAttribute('aria-pressed',on); bNight.textContent=on?'День':'Вечер'; night(on)};
   function resize(){const w=stage.clientWidth,h=stage.clientHeight; if(!w||!h)return; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix()}
-  new ResizeObserver(resize).observe(stage); resize(); setView('main');
-  g3={resize,run:true};
-  (function loop(){ if(g3.run){controls.update(); renderer.render(scene,camera);} requestAnimationFrame(loop); })();
+  const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(stage); resize(); setView('main');
+  const state={index:modelIndex,resize,run:true,inView:true,disposed:false,renderer,scene,controls,resizeObserver};
+  const observer=new IntersectionObserver(entries=>{state.inView=entries[0].isIntersecting},{rootMargin:'200px'});observer.observe(stage);state.observer=observer;
+  g3=state;
+  (function loop(){if(state.disposed)return;if(state.run&&state.inView&&!document.hidden){controls.update(); renderer.render(scene,camera);}state.raf=requestAnimationFrame(loop);})();
+}
+function dispose3d(){
+  const state=g3;if(!state)return;state.disposed=true;cancelAnimationFrame(state.raf);
+  if(state.observer)state.observer.disconnect();if(state.resizeObserver)state.resizeObserver.disconnect();if(state.controls)state.controls.dispose();
+  if(state.scene){const geometries=new Set(),materials=new Set(),textures=new Set();state.scene.traverse(o=>{if(o.geometry)geometries.add(o.geometry);if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>materials.add(m))});materials.forEach(m=>{for(const key in m)if(m[key]&&m[key].isTexture)textures.add(m[key]);m.dispose()});textures.forEach(t=>t.dispose());geometries.forEach(g=>g.dispose())}
+  if(state.renderer){state.renderer.dispose();state.renderer.domElement.remove()}g3=null;
 }
 
 /* ---------- Вкладки ---------- */
@@ -2069,9 +2189,11 @@ const TABS=['3d','plan','variants','site','cost','pros'];
 function show(t){
   if(!TABS.includes(t))t='3d';
   TABS.forEach(k=>{document.getElementById('v-'+k).hidden=k!==t; document.getElementById('t-'+k).setAttribute('aria-selected',k===t)});
-  if(t==='3d'){init3d(); if(g3&&g3.resize){g3.run=true;g3.resize()}} else if(g3)g3.run=false;
+  if(t==='3d'){if(g3&&g3.index!==activeVariant)dispose3d();init3d(); if(g3&&g3.resize){g3.run=true;g3.resize()}} else if(g3)g3.run=false;
 }
 document.querySelectorAll('nav [data-tab]').forEach(b=>b.addEventListener('click',()=>{location.hash=b.dataset.tab}));
+document.getElementById('model-variant').addEventListener('change',e=>{renderVariant(+e.target.value);if(!document.getElementById('v-3d').hidden){dispose3d();init3d()}});
+document.getElementById('variant-3d').addEventListener('click',()=>{location.hash='3d'});
 addEventListener('hashchange',()=>show(location.hash.slice(1)));
 show(location.hash.slice(1));
 </script>
