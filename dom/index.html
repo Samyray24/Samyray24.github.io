@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Одноэтажный дом около 100 м²: план, участок, 3D-модель, смета и подрядчики Абакана.">
+<meta name="description" content="Одноэтажный дом из газобетона: 6 вариантов планировок от 97 до 120 м², 3D-модель, участок, смета и подрядчики Абакана.">
 <title>Проект дома 100 м²</title>
 <style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <style>
@@ -111,6 +111,23 @@ ul b{color:var(--ink);font-weight:500}
 ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;max-width:78ch}
 ol.steps b{font-weight:600}
 ol.steps span{color:var(--ink2)}
+/* варианты планировок */
+.variant-picker{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.variant-picker button{font:inherit;font-weight:500;background:var(--surface);color:var(--ink2);border:1px solid var(--line);padding:8px 12px;cursor:pointer;border-radius:3px}
+.variant-picker button[aria-pressed="true"]{color:var(--ink);border-color:var(--wood);box-shadow:inset 0 -2px var(--wood)}
+.variant-head{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:end;justify-content:space-between;margin-bottom:14px}
+.variant-head h2{font-size:clamp(18px,3vw,24px);margin:0}
+.variant-head p{margin:4px 0 0;color:var(--ink2);max-width:68ch}
+.variant-facts{display:flex;flex-wrap:wrap;gap:8px 20px;font-family:var(--f-mono);font-size:12px;color:var(--ink2)}
+.variant-facts b{display:block;font-size:18px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+.variant-details{margin-top:18px}
+.variant-details ul{max-width:72ch}
+.compare{margin-top:22px}
+.compare h3{font-family:var(--f-display);font-size:15px;font-weight:500;margin:0 0 10px}
+.compare table{min-width:720px}
+.compare caption{text-align:left;padding:0 8px 8px;color:var(--ink2);font-size:12.5px}
+.compare tbody th{font:inherit;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:500}
+.compare tr.current{background:var(--wood-soft)}
 </style>
 </head>
 <body>
@@ -133,6 +150,7 @@ ol.steps span{color:var(--ink2)}
   <nav role="tablist" aria-label="Разделы">
     <button role="tab" id="t-3d" aria-selected="true" data-tab="3d">3D-модель</button>
     <button role="tab" id="t-plan" aria-selected="false" data-tab="plan">План дома</button>
+    <button role="tab" id="t-variants" aria-selected="false" data-tab="variants">Варианты</button>
     <button role="tab" id="t-site" aria-selected="false" data-tab="site">Участок</button>
     <button role="tab" id="t-cost" aria-selected="false" data-tab="cost">Смета</button>
     <button role="tab" id="t-pros" aria-selected="false" data-tab="pros">Подрядчики</button>
@@ -156,6 +174,47 @@ ol.steps span{color:var(--ink2)}
   <section id="v-plan" hidden>
     <div class="sheet scroll" id="plan"></div>
     <p class="cap">Размеры в метрах по осям стен. Сверху сад и терраса, снизу улица. Наружные стены 400 мм, несущая стена между коридором и спальнями 300 мм, перегородки 100 мм.</p>
+  </section>
+
+  <section id="v-variants" hidden>
+    <div class="variant-picker" role="group" aria-label="Выбор планировки">
+      <button type="button" data-variant="0" aria-pressed="true">1 · Исходный</button>
+      <button type="button" data-variant="1" aria-pressed="false">2 · 12 × 10</button>
+      <button type="button" data-variant="2" aria-pressed="false">3 · 15 × 8</button>
+      <button type="button" data-variant="3" aria-pressed="false">4 · 11 × 10</button>
+      <button type="button" data-variant="4" aria-pressed="false">5 · 12 × 10</button>
+      <button type="button" data-variant="5" aria-pressed="false">6 · 14 × 10</button>
+    </div>
+    <div class="variant-head">
+      <div><h2 id="variant-title"></h2><p id="variant-description"></p></div>
+      <div class="variant-facts" id="variant-facts"></div>
+    </div>
+    <div class="sheet scroll" id="variant-plan"></div>
+    <p class="cap">Схемы в метрах по осям стен. Терраса входит в контур крыши, но не в отапливаемую площадь; гараж показан отдельно. Сверху сад, снизу улица.</p>
+    <div class="cols variant-details">
+      <div>
+        <h2>Помещения выбранного варианта</h2>
+        <table>
+          <thead><tr><th>Помещение</th><th class="n">м²</th></tr></thead>
+          <tbody id="variant-rooms"></tbody>
+        </table>
+      </div>
+      <div>
+        <h2>Что получилось</h2>
+        <ul id="variant-features"></ul>
+      </div>
+    </div>
+    <div class="compare">
+      <h3>Сравнение всех вариантов</h3>
+      <div class="sheet scroll" style="padding:4px 8px" tabindex="0" role="region" aria-label="Таблица сравнения планировок">
+        <table>
+          <caption>Площади по осям стен. «Всего» = дом без террасы + терраса + гараж.</caption>
+          <thead><tr><th>Вариант</th><th class="n">Дом, м²</th><th class="n">Терраса, м²</th><th class="n">Гараж, м²</th><th class="n">Всего, м²</th><th>Дом, м</th></tr></thead>
+          <tbody id="variant-compare"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="note" style="margin-top:12px"><b>Важно:</b> это концептуальные схемы для выбора планировки, а не рабочие чертежи. 3D-модель, посадка на участке и подробная смета на соседних вкладках относятся к исходному варианту 1. Для новых вариантов конструктив, окна, двери и смету нужно разработать после выбора схемы.</div>
   </section>
 
   <section id="v-site" hidden>
@@ -348,7 +407,7 @@ ol.steps span{color:var(--ink2)}
 
   <div class="cols">
     <div>
-      <h2>Помещения</h2>
+      <h2>Помещения исходного варианта</h2>
       <table>
         <thead><tr><th>Помещение</th><th class="n">м²</th></tr></thead>
         <tbody id="rooms"></tbody>
@@ -1597,6 +1656,106 @@ function buildPlan(){
 }
 document.getElementById('plan').innerHTML=buildPlan();
 
+/* ---------- Варианты планировок ---------- */
+const VARIANTS=[
+ {name:'Исходный',title:'Вариант 1 · Исходный эскиз',description:'Планировка, которая уже была на сайте: 97,4 м² дома, терраса 19 м² и гараж 33,6 м².',w:W,d:D,rooms:ROOMS,garage:ANNEX,original:true,
+  features:['<b>Кухня-гостиная 33,6 м²</b> с панорамным остеклением и выходом на террасу.','<b>Две спальни 15,5 и 19,5 м²</b>, совмещённый санузел 9,6 м² и большой гардероб 11,2 м².','<b>Гараж 33,6 м²</b> с местом для котла и внутренней дверью из гардероба.']},
+ {name:'Ровная сетка',title:'Вариант 2 · Ровная сетка 12 × 10 м',description:'Простое прямоугольное деление: большая общая зона, два одинаковых спальных блока и компактный хозяйственный узел у входа.',w:12,d:10,garage:{x:12,y:4,w:4,h:6},entry:{x:10,y:10},
+  rooms:[
+   {n:'Зал и кухня',x:0,y:0,w:8,h:5,f:'wood'},
+   {n:'Терраса',x:8,y:0,w:4,h:5,f:'deck',out:1},
+   {n:'Спальня 1',x:0,y:5,w:4,h:5,f:'wood'},
+   {n:'Спальня 2',x:4,y:5,w:4,h:5,f:'wood'},
+   {n:'Ванная и туалет',x:8,y:5,w:1.8,h:3,f:'tile',lines:['Ванная','и туалет']},
+   {n:'Гардероб',x:9.8,y:5,w:2.2,h:3,f:'wood'},
+   {n:'Прихожая',x:8,y:8,w:4,h:2,f:'tile'}],
+  features:['<b>Кухня-гостиная 40 м²</b> и две равные спальни по 20 м² — удобно для семьи с двумя детьми или кабинета во второй спальне.','<b>Санузел 5,4 м² и гардероб 6,6 м²</b> собраны рядом с прихожей 8 м² и гаражом.','<b>Терраса 20 м²</b> примыкает к общей зоне. Общая площадь дома без террасы и гаража — ровно 100 м².']},
+ {name:'Продольный',title:'Вариант 3 · Продольный дом 15 × 8 м',description:'Вытянутый корпус для широкого участка: спальни в одном ряду, отдельная постирочная и длинная терраса в садовой части.',w:15,d:8,garage:{x:15,y:2,w:4,h:6},entry:{x:11.5,y:8},
+  rooms:[
+   {n:'Зал и кухня',x:0,y:0,w:8,h:5,f:'wood'},
+   {n:'Ванная и туалет',x:8,y:0,w:4,h:2.5,f:'tile',lines:['Ванная','и туалет']},
+   {n:'Гардероб',x:12,y:0,w:3,h:2.5,f:'wood'},
+   {n:'Терраса',x:8,y:2.5,w:7,h:2.5,f:'deck',out:1},
+   {n:'Спальня 1',x:0,y:5,w:5,h:3,f:'wood'},
+   {n:'Спальня 2',x:5,y:5,w:5,h:3,f:'wood'},
+   {n:'Прихожая',x:10,y:5,w:3,h:3,f:'tile'},
+   {n:'Постирочная',x:13,y:5,w:2,h:3,f:'tile'}],
+  features:['<b>Кухня-гостиная 40 м²</b>, две спальни по 15 м², санузел 10 м² и гардероб 7,5 м².','<b>Дополнительная постирочная 6 м²</b> разгружает санузел; прихожая 9 м² связывает вход с комнатами.','<b>Дом 102,5 м²</b>, терраса 17,5 м² и гараж 24 м². Глубина корпуса 8 м упрощает продольную схему, но требует более широкой пятна застройки.']},
+ {name:'Компактный',title:'Вариант 4 · Компактный дом 11 × 10 м',description:'Самый небольшой контур из новых вариантов: ровно 100 м² дома, небольшая терраса и пристроенный гараж 24 м².',w:11,d:10,garage:{x:11,y:4,w:4,h:6},entry:{x:9.5,y:10},
+  rooms:[
+   {n:'Зал и кухня',x:0,y:0,w:7,h:5,f:'wood'},
+   {n:'Терраса',x:7,y:0,w:4,h:2.5,f:'deck',out:1},
+   {n:'Ванная и туалет',x:7,y:2.5,w:4,h:2.5,f:'tile',lines:['Ванная','и туалет']},
+   {n:'Спальня 1',x:0,y:5,w:4,h:5,f:'wood'},
+   {n:'Спальня 2',x:4,y:5,w:4,h:5,f:'wood'},
+   {n:'Гардероб',x:8,y:5,w:3,h:2,f:'wood'},
+   {n:'Прихожая',x:8,y:7,w:3,h:3,f:'tile'}],
+  features:['<b>Две спальни по 20 м²</b>, кухня-гостиная 35 м² и вместительный совмещённый санузел 10 м².','<b>Гардероб 6 м²</b> находится у спален, прихожая 9 м² имеет отдельный вход с улицы и сообщение с гаражом.','<b>Терраса 10 м²</b> — самая компактная. Вместе с гаражом общая расчётная площадь контура составляет 134 м².']},
+ {name:'Большая гостиная',title:'Вариант 5 · Большая кухня-гостиная 12 × 10 м',description:'Вариант с акцентом на общую зону: почти половина отапливаемого дома отведена кухне и гостиной.',w:12,d:10,garage:{x:12,y:4,w:4,h:6},entry:{x:10,y:10},
+  rooms:[
+   {n:'Зал и кухня',x:0,y:0,w:8,h:6,f:'wood'},
+   {n:'Терраса',x:8,y:0,w:4,h:4,f:'deck',out:1},
+   {n:'Ванная и туалет',x:8,y:4,w:4,h:2,f:'tile',lines:['Ванная','и туалет']},
+   {n:'Спальня 1',x:0,y:6,w:4,h:4,f:'wood'},
+   {n:'Спальня 2',x:4,y:6,w:4,h:4,f:'wood'},
+   {n:'Гардероб',x:8,y:6,w:4,h:2,f:'wood'},
+   {n:'Прихожая',x:8,y:8,w:4,h:2,f:'tile'}],
+  features:['<b>Кухня-гостиная 48 м²</b> — самая большая среди вариантов до 110 м²; терраса 16 м² продолжает общую зону.','<b>Две спальни по 16 м²</b>, санузел 8 м², гардероб 8 м² и прихожая 8 м².','<b>Дом 104 м²</b> — запас по площади по сравнению со 100-метровыми вариантами ушёл прежде всего в общую зону и хранение.']},
+ {name:'120 м²',title:'Вариант 6 · Просторный дом 14 × 10 м',description:'Вариант площадью 120 м² с увеличенной общей зоной, двумя большими спальнями и отдельной постирочной.',w:14,d:10,garage:{x:14,y:4,w:4,h:6},entry:{x:9.5,y:10},
+  rooms:[
+   {n:'Зал и кухня',x:0,y:0,w:10,h:5,f:'wood'},
+   {n:'Терраса',x:10,y:0,w:4,h:5,f:'deck',out:1},
+   {n:'Спальня 1',x:0,y:5,w:4,h:5,f:'wood'},
+   {n:'Спальня 2',x:4,y:5,w:4,h:5,f:'wood'},
+   {n:'Ванная и туалет',x:8,y:5,w:3,h:2.5,f:'tile',lines:['Ванная','и туалет']},
+   {n:'Гардероб',x:11,y:5,w:3,h:2.5,f:'wood'},
+   {n:'Прихожая',x:8,y:7.5,w:3,h:2.5,f:'tile'},
+   {n:'Постирочная',x:11,y:7.5,w:3,h:2.5,f:'tile'}],
+  features:['<b>Кухня-гостиная 50 м²</b> и две спальни по 20 м² — самый просторный вариант на сайте.','<b>Санузел, гардероб, прихожая и постирочная</b> занимают по 7,5 м² каждое помещение.','<b>Дом 120 м²</b>, терраса 20 м² и гараж 24 м²; общая расчётная площадь по осям — 164 м².']}
+];
+const variantHouse=v=>v.rooms.filter(r=>!r.out).reduce((s,r)=>s+r.w*r.h,0);
+const variantTerrace=v=>v.rooms.filter(r=>r.out).reduce((s,r)=>s+r.w*r.h,0);
+const variantTotal=v=>variantHouse(v)+variantTerrace(v)+v.garage.w*v.garage.h;
+function buildVariantPlan(v){
+  if(v.original)return buildPlan();
+  const g=v.garage, minX=Math.min(-1.8,g.x-1.8), maxX=Math.max(v.w+2,g.x+g.w+1.8), maxY=Math.max(v.d,g.y+g.h)+2.1;
+  let s=`<svg viewBox="${minX} -2.3 ${maxX-minX} ${maxY+2.3}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${v.title}">`+DEFS;
+  v.rooms.forEach(r=>s+=`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="var(${FILL[r.f]})" stroke="var(--wall)" stroke-width=".07"/>`);
+  s+=`<rect x="0" y="0" width="${v.w}" height="${v.d}" fill="none" stroke="var(--wall)" stroke-width=".18"/>`;
+  s+=`<rect x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" fill="var(--fl-tile)" stroke="var(--wall)" stroke-width=".18"/>`;
+  s+=`<rect x="${g.x+.7}" y="${g.y+1.8}" width="${g.w-1.4}" height="3.8" rx=".45" fill="var(--furn)" stroke="var(--ink2)" stroke-width=".035"/><rect x="${g.x+1}" y="${g.y+2.5}" width="${g.w-2}" height="1.4" rx=".2" fill="none" stroke="var(--ink2)" stroke-width=".03"/>`;
+  s+=`<text x="${g.x+g.w/2}" y="${g.y+.75}" font-size=".3" text-anchor="middle" font-weight="600">Гараж</text><text class="mono" x="${g.x+g.w/2}" y="${g.y+1.15}" font-size=".24" text-anchor="middle" style="fill:var(--ink2)">${fm(g.w*g.h)} м²</text>`;
+  s+=`<line x1="${g.x+.5}" y1="${g.y+g.h}" x2="${g.x+g.w-.5}" y2="${g.y+g.h}" stroke="var(--wood)" stroke-width=".16"/><text x="${g.x+g.w/2}" y="${g.y+g.h+.55}" font-size=".24" text-anchor="middle">ворота 3,0 м</text>`;
+  v.rooms.forEach(r=>{
+    const lines=r.lines||[r.n], x=r.x+r.w/2, y=r.y+r.h/2, fs=r.w<2.5?.23:.29, start=y-(lines.length-1)*fs*.55-fs*.35;
+    lines.forEach((line,i)=>s+=`<text x="${x}" y="${start+i*fs*1.1}" font-size="${fs}" text-anchor="middle" font-weight="600">${line}</text>`);
+    s+=`<text class="mono" x="${x}" y="${start+lines.length*fs*1.1}" font-size="${fs*.82}" text-anchor="middle" style="fill:var(--ink2)">${fm(r.w*r.h)} м²</text>`;
+    if(r.out)s+=`<text x="${x}" y="${start+(lines.length+1)*fs*1.1}" font-size=".2" text-anchor="middle" style="fill:var(--ink2)">под общей крышей</text>`;
+  });
+  const e=v.entry;
+  s+=`<rect x="${e.x-.8}" y="${e.y}" width="1.6" height=".35" fill="var(--conc)" stroke="var(--ink2)" stroke-width=".03"/><line x1="${e.x}" y1="${e.y+.85}" x2="${e.x}" y2="${e.y+.15}" stroke="var(--ink2)" stroke-width=".04" marker-end="url(#ar)"/><text x="${e.x}" y="${e.y+1.35}" font-size=".27" text-anchor="middle" font-weight="600">ВХОД</text>`;
+  s+=`<text x="${v.w/2}" y="-1.85" font-size=".3" text-anchor="middle" style="fill:var(--ink2)">САД</text><text x="${v.w/2}" y="${v.d+1.8}" font-size=".32" text-anchor="middle" letter-spacing=".18em" style="fill:var(--ink2)">УЛИЦА</text>`;
+  s+=dim(0,-1.1,v.w,-1.1,fm(v.w)+' м')+dim(v.w+.85,0,v.w+.85,v.d,fm(v.d)+' м');
+  s+=dim(g.x,g.y+g.h+1.15,g.x+g.w,g.y+g.h+1.15,fm(g.w)+' м',.24);
+  return s+'</svg>';
+}
+function renderVariant(index){
+  const v=VARIANTS[index], house=variantHouse(v), terrace=variantTerrace(v), garage=v.garage.w*v.garage.h;
+  document.querySelectorAll('[data-variant]').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.variant===index));
+  document.getElementById('variant-title').textContent=v.title;
+  document.getElementById('variant-description').textContent=v.description;
+  document.getElementById('variant-facts').innerHTML=`<span><b>${fm(house)}</b>м² дом</span><span><b>${fm(terrace)}</b>м² терраса</span><span><b>${fm(garage)}</b>м² гараж</span><span><b>${fm(v.w)}×${fm(v.d)}</b>м дом</span>`;
+  document.getElementById('variant-plan').innerHTML=buildVariantPlan(v);
+  let rows='';
+  v.rooms.forEach(r=>rows+=`<tr><td>${r.n}${r.out?' <span style="color:var(--ink2)">(не отапливается)</span>':''}</td><td class="n">${fm(r.w*r.h)}</td></tr>`);
+  rows+=`<tr><td>Гараж</td><td class="n">${fm(garage)}</td></tr><tr class="tot"><td>Площадь дома без террасы и гаража</td><td class="n">${fm(house)}</td></tr>`;
+  document.getElementById('variant-rooms').innerHTML=rows;
+  document.getElementById('variant-features').innerHTML=v.features.map(f=>`<li>${f}</li>`).join('')+'<li>Площади указаны по осям стен. Чистая площадь пола будет примерно на 10 % меньше.</li>';
+  document.getElementById('variant-compare').innerHTML=VARIANTS.map((item,i)=>`<tr class="${i===index?'current':''}"><th scope="row">${i+1} · ${item.name}</th><td class="n">${fm(variantHouse(item))}</td><td class="n">${fm(variantTerrace(item))}</td><td class="n">${fm(item.garage.w*item.garage.h)}</td><td class="n">${fm(variantTotal(item))}</td><td>${fm(item.w)} × ${fm(item.d)}</td></tr>`).join('');
+}
+document.querySelectorAll('[data-variant]').forEach(b=>b.addEventListener('click',()=>renderVariant(+b.dataset.variant)));
+renderVariant(0);
+
 function buildSite(){
   const p=PLOT, x1=p.x+p.w, y0=p.y;
   let s=`<svg viewBox="${p.x-2.6} ${y0-3.4} ${p.w+5.4} ${p.d+9.6}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="План участка">`+DEFS;
@@ -1906,7 +2065,7 @@ function init3d(){
 }
 
 /* ---------- Вкладки ---------- */
-const TABS=['3d','plan','site','cost','pros'];
+const TABS=['3d','plan','variants','site','cost','pros'];
 function show(t){
   if(!TABS.includes(t))t='3d';
   TABS.forEach(k=>{document.getElementById('v-'+k).hidden=k!==t; document.getElementById('t-'+k).setAttribute('aria-selected',k===t)});
