@@ -167,8 +167,8 @@ ol.steps span{color:var(--ink2)}
       <select id="model-variant">
         <option value="0">1 · Исходный, 97,4 м²</option>
         <option value="1">2 · Ровная сетка, 100 м²</option>
-        <option value="2">3 · Центральная галерея, 102,5 м²</option>
-        <option value="3">4 · Компактный, 100 м²</option>
+        <option value="2">3 · Центральная галерея, 101,8 м²</option>
+        <option value="3">4 · Компактный, 97,8 м²</option>
         <option value="4">5 · Большая гостиная, 104 м²</option>
         <option value="5">6 · Просторный, 120 м²</option>
       </select>
@@ -1595,12 +1595,13 @@ function dim(x1,y1,x2,y2,label,fs=.3){
 }
 function planWall(w){
   const hor=w.a[1]===w.b[1], c=hor?w.a[1]:w.a[0], ex=w.ex||[0,0];
-  const s=hor?w.a[0]:w.a[1], e=hor?w.b[0]:w.b[1];
-  const [x1,y1]=P(hor,s-ex[0],c), [x2,y2]=P(hor,e+ex[1],c);
-  let o=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--wall)" stroke-width="${w.t}"/>`;
-  (w.o||[]).forEach(q=>{
-    const lo=q.p-q.w/2, hi=q.p+q.w/2, [a1,b1]=P(hor,lo,c), [a2,b2]=P(hor,hi,c);
-    o+=`<line x1="${a1}" y1="${b1}" x2="${a2}" y2="${b2}" stroke="var(--surface)" stroke-width="${w.t+.05}"/>`;
+  const s=(hor?w.a[0]:w.a[1])-ex[0], e=(hor?w.b[0]:w.b[1])+ex[1];
+  const ops=(w.o||[]).slice().sort((a,b)=>a.p-b.p);
+  let o='', cur=s;
+  const wallSeg=(u1,u2)=>{if(u2-u1<.002)return;const [x1,y1]=P(hor,u1,c),[x2,y2]=P(hor,u2,c);o+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--wall)" stroke-width="${w.t}"/>`;};
+  ops.forEach(q=>{
+    const lo=q.p-q.w/2, hi=q.p+q.w/2;
+    wallSeg(cur,lo);
     if(q.k==='win'||q.k==='gdoor'){
       [-1,0,1].forEach(m=>{const [p1,r1]=P(hor,lo,c+m*w.t/2*.8),[p2,r2]=P(hor,hi,c+m*w.t/2*.8);
         o+=`<line x1="${p1}" y1="${r1}" x2="${p2}" y2="${r2}" stroke="var(--wall)" stroke-width="${m?.03:.02}"/>`});
@@ -1614,9 +1615,11 @@ function planWall(w){
       o+=`<line x1="${hx}" y1="${hy}" x2="${lx}" y2="${ly}" stroke="var(--wall)" stroke-width=".05"/>`+
          `<path d="M${ax} ${ay} A${q.w} ${q.w} 0 0 ${sweep} ${lx} ${ly}" fill="none" stroke="var(--ink2)" stroke-width=".02" stroke-dasharray=".1 .08"/>`;
     }
-    if(q.k==='gdoor'){ const [m1,n1]=P(hor,lo+.1,c+.32),[m2,n2]=P(hor,q.p,c+.32);
+    if(q.k==='gdoor'){ const sw=q.sw||1, [m1,n1]=P(hor,lo+.12,c+sw*.34),[m2,n2]=P(hor,q.p+.06,c+sw*.34);
       o+=`<line x1="${m1}" y1="${n1}" x2="${m2}" y2="${n2}" stroke="var(--ink2)" stroke-width=".03" marker-end="url(#ar)"/>`; }
+    cur=Math.max(cur,hi);
   });
+  wallSeg(cur,e);
   return o;
 }
 function furPlan(f){
@@ -1679,136 +1682,304 @@ const dH=(c,p,w=.9,sw=1)=>({hor:1,c,p,w,k:'door',s:0,h:2.1,sw});
 const dV=(c,p,w=.9,sw=1)=>({hor:0,c,p,w,k:'door',s:0,h:2.1,sw});
 const wH=(c,p,w=1.6)=>({hor:1,c,p,w,k:'win',s:.8,h:1.4});
 const wV=(c,p,w=1.6)=>({hor:0,c,p,w,k:'win',s:.8,h:1.4});
-const tV=(c,p,w=1.8)=>({hor:0,c,p,w,k:'gdoor',s:0,h:2.3});
+const pH=(c,p,w=3.2)=>({hor:1,c,p,w,k:'win',s:0,h:2.6,pano:1});
+const pV=(c,p,w=2.4)=>({hor:0,c,p,w,k:'win',s:0,h:2.6,pano:1});
+const tV=(c,p,w=1.8,sw=-1)=>({hor:0,c,p,w,k:'gdoor',s:0,h:2.3,sw});
+const tH=(c,p,w=1.8,sw=1)=>({hor:1,c,p,w,k:'gdoor',s:0,h:2.3,sw});
 const oH=(c,p,w)=>({hor:1,c,p,w,k:'open',s:0,h:2.2});
 const oV=(c,p,w)=>({hor:0,c,p,w,k:'open',s:0,h:2.2});
-const tH=(c,p,w=1.8)=>({hor:1,c,p,w,k:'gdoor',s:0,h:2.3});
-function originalStyle(o){
-  const {w,d,a,b,c,l,t,bath,corridor}=o,x=a+b,split=o.split??(t+(d-t)/2),wardrobe=d-l-bath,tambour=d-l-corridor,garage={x:-4,y:d-6,w:4,h:6},entry={x:a+b/2,y:d};
-  const rooms=[
-   {n:'Зал и кухня',x:0,y:0,w:x,h:l,f:'wood'},
-   {n:'Терраса',x,y:0,w:c,h:t,f:'deck',out:1},
-   {n:'Ванная и туалет',x:0,y:l,w:a,h:bath,f:'tile',lines:['Ванная','и туалет']},
-   {n:'Гардероб',x:0,y:l+bath,w:a,h:wardrobe,f:'wood'},
-   {n:'Коридор',x:a,y:l,w:b,h:corridor,f:'tile'},
-   {n:'Тамбур',x:a,y:l+corridor,w:b,h:tambour,f:'tile'},
-   {n:'Спальня 1',x,y:t,w:c,h:split-t,f:'wood'},
-   {n:'Спальня 2',x,y:split,w:c,h:d-split,f:'wood'}];
-  const ops=[wH(0,x/2,3),wV(0,l/2,3.2),tV(x,t/2,Math.min(1.8,t-.3)),wV(w,t+(split-t)/2),wV(w,split+(d-split)/2),
-   oH(l,a+b/2,Math.min(1.6,b-.3)),dV(a,l+bath/2),dV(a,l+bath+wardrobe/2),dV(x,l+(split-l)/2),dV(x,split+(l+corridor-split)/2),dH(d,entry.x,1)];
-  return {...o,rooms,ops,garage,entry,garageDoor:l+bath+wardrobe/2};
-}
+
 const VARIANTS=[
  {name:'Исходный',title:'Вариант 1 · Исходный эскиз',description:'Планировка, которая уже была на сайте: 97,4 м² дома, терраса 19 м² и гараж 33,6 м².',w:W,d:D,rooms:ROOMS,garage:ANNEX,original:true,
   features:['<b>Кухня-гостиная 33,6 м²</b> с панорамным остеклением и выходом на террасу.','<b>Две спальни 15,5 и 19,5 м²</b>, совмещённый санузел 9,6 м² и большой гардероб 11,2 м².','<b>Гараж 33,6 м²</b> с местом для котла и внутренней дверью из гардероба.']},
- originalStyle({name:'Ровная сетка',title:'Вариант 2 · Ровная сетка 12 × 10 м',description:'Та же логика, что в исходном проекте: коридор и тамбур связывают все комнаты, гостиная открыта в сад, гараж сообщается с гардеробной.',w:12,d:10,a:4.6,b:2.4,c:5,l:5,t:4,bath:2.4,corridor:2.4,
-  features:['<b>Кухня-гостиная 35 м²</b> и две спальни по 15 м². В обе спальни ведут отдельные двери из коридора, а не из гостиной.','<b>Санузел 11 м² и гардероб 12 м²</b> расположены как в исходном проекте. Коридор 5,8 м², тамбур 6,2 м².','<b>Терраса 20 м²</b> примыкает к гостиной. Дом без террасы и гаража — ровно 100 м².']}),
- {name:'Центральная галерея',title:'Вариант 3 · Центральная галерея 15 × 8 м',description:'Другая схема: центральная галерея разделяет спальни и общую зону, а большая мастер-спальня занимает спокойное левое крыло.',w:15,d:8,garage:{x:15,y:2,w:4,h:6},entry:{x:7.75,y:8},garageDoor:7.2,
+
+ {name:'Ровная сетка',title:'Вариант 2 · Ровная сетка 12 × 10 м',
+  description:'Логика исходного проекта в строгой прямоугольной сетке 12 × 10 м: ровные 100 м² дома, углублённый вход с улицы, две равноценные спальни и связь гаража с гардеробом.',
+  w:12,d:10,garage:{x:-4,y:4,w:4,h:6},niche:{x:4.5,y:9.0,w:2.5,h:1.0},entry:{x:5.75,y:9.0},garageDoor:8.7,terraceSteps:{x:9.5,y:0},
   rooms:[
-   {n:'Спальня 1',x:0,y:0,w:7,h:2.5,f:'wood'},
-   {n:'Ванная и туалет',x:0,y:2.5,w:7,h:1.75,f:'tile',lines:['Ванная','и туалет']},
-   {n:'Спальня 2',x:0,y:4.25,w:7,h:3.75,f:'wood'},
-   {n:'Коридор',x:7,y:0,w:1.5,h:8,f:'tile'},
-   {n:'Терраса',x:8.5,y:0,w:6.5,h:35/13,f:'deck',out:1},
-   {n:'Зал и кухня',x:8.5,y:35/13,w:6.5,h:6.4-35/13,f:'wood'},
-   {n:'Гардероб',x:8.5,y:6.4,w:6.5,h:1.6,f:'wood'}],
-  ops:[wV(0,1.25),wV(0,3.375,.6),wV(0,6.125),dV(7,1.375),dV(7,3.375),dV(7,6.125),oV(8.5,(35/13+6.4)/2,1.4),tH(35/13,11.75,2),dV(8.5,7.2,.8),dH(8,7.75,1)],
-  features:['<b>Центральная галерея 12 м²</b> связывает обе спальни, санузел, гардеробную и гостиную. Ни одна спальня не является проходной.','<b>Мастер-спальня 26,3 м²</b>, вторая спальня 17,5 м², санузел 12,3 м². Гардеробная 10,4 м² имеет нормальный проход и сообщается с гаражом.','<b>Гостиная 24,1 м²</b> имеет прямой выход на террасу 17,5 м². Общая площадь дома — 102,5 м².']},
- originalStyle({name:'Компактный',title:'Вариант 4 · Компактный дом 11 × 10 м',description:'Компактная версия исходной планировки: тот же понятный коридор, две спальни, хозяйственный блок и выход на террасу из гостиной.',w:11,d:10,a:4.5,b:2.5,c:4,l:5.5,t:2.5,bath:2.2,corridor:2.2,
-  features:['<b>Две спальни по 15 м²</b> с отдельными дверями из коридора и кухня-гостиная 38,5 м².','<b>Санузел 9,9 м² и гардеробная 10,4 м²</b> находятся напротив спален. Коридор 5,5 м², тамбур 5,8 м².','<b>Терраса 10 м²</b> на внешнем углу. Вместе с гаражом общая расчётная площадь контура — 134 м².']}),
- originalStyle({name:'Большая гостиная',title:'Вариант 5 · Большая кухня-гостиная 12 × 10 м',description:'Вариант с увеличенной общей зоной и коротким коридором: в каждую спальню и хозяйственное помещение есть отдельный удобный вход.',w:12,d:10,a:5,b:2,c:5,l:6,t:3.2,bath:2,corridor:2,split:6.6,
-  features:['<b>Кухня-гостиная 42 м²</b> — самая большая среди вариантов до 110 м²; терраса 16 м² продолжает общую зону.','<b>Две спальни по 17 м²</b> имеют двери из коридора. Санузел и гардеробная — по 10 м².','<b>Дом 104 м²</b>. Коридор и тамбур занимают по 4 м², без лишней площади на проходы.']}),
- originalStyle({name:'120 м²',title:'Вариант 6 · Просторный дом 14 × 10 м',description:'Увеличенная версия исходной схемы: просторная гостиная, две большие спальни и отдельные входы во все хозяйственные помещения.',w:14,d:10,a:5,b:3,c:6,l:6,t:10/3,bath:2,corridor:2,split:20/3,
-  features:['<b>Кухня-гостиная 48 м²</b> и две спальни по 20 м². Обе спальни открываются в общий коридор.','<b>Санузел и гардеробная по 10 м²</b>, коридор и тамбур по 6 м². Из гардеробной есть вход в гараж, как в варианте 1.','<b>Дом 120 м²</b>, терраса 20 м² и гараж 24 м²; общая расчётная площадь по осям — 164 м².']})
+   {n:'Зал и кухня',x:0,y:0,w:7.0,h:4.9,f:'wood',lx:2.65,ly:3.3,fs:.31},
+   {n:'Терраса',x:7.0,y:0,w:5.0,h:3.5,f:'deck',out:1,lx:9.8,ly:1.0,fs:.3},
+   {n:'Ванная и туалет',x:0,y:4.9,w:4.5,h:2.4,f:'tile',lines:['Ванная','и туалет'],lx:2.9,ly:5.95,fs:.26},
+   {n:'Гардероб',x:0,y:7.3,w:4.5,h:2.7,f:'tile',lx:2.25,ly:8.65,fs:.28},
+   {n:'Коридор',x:4.5,y:4.9,w:2.5,h:2.7,f:'tile',lx:5.75,ly:6.2,fs:.26},
+   {n:'Тамбур',x:4.5,y:7.6,w:2.5,h:1.4,f:'tile',lx:5.75,ly:8.25,fs:.25},
+   {n:'Спальня 1',x:7.0,y:3.5,w:5.0,h:3.0,f:'wood',lx:10.9,ly:5.65,fs:.28},
+   {n:'Спальня 2',x:7.0,y:6.5,w:5.0,h:3.5,f:'wood',lx:10.9,ly:9.05,fs:.28}
+  ],
+  ops:[pH(0,3.5,3.4),pV(0,2.2,2.2),tV(7.0,1.75,1.8,-1),wV(12,5.0,1.6),wV(12,8.25,1.6),wH(10,9.5,1.4),
+   oH(4.9,5.75,1.4),dV(4.5,6.1,.8,-1),dV(4.5,8.3,.8,-1),dH(7.6,5.75,.9,-1),dV(7.0,5.7,.9,1),dV(7.0,7.05,.9,1),dH(9.0,5.75,1.0,1)],
+  fur:[
+   {x:2.3,y:.22,w:2.0,d:.38,h:.5,col:0x2a2e33},
+   {x:1.3,y:1.65,w:3.0,d:.9,h:.8,col:0x6d7a82,pil:1},
+   {x:2.3,y:.95,w:1.0,d:.45,h:.4,sh:'o',col:0xc9a77c},
+   {x:4.8,y:2.85,w:1.7,d:.95,h:.75,sh:'o',col:0xb87a45},
+   {x:4.35,y:3.12,w:.38,d:.38,h:.45,col:0x3b4248},{x:6.55,y:3.12,w:.38,d:.38,h:.45,col:0x3b4248},
+   {x:.25,y:4.18,w:4.1,d:.6,h:.9,col:0xe5e1d8,kit:1},
+   {x:.25,y:5.1,w:1.75,d:.72,h:.55,col:0xf2f2ef},
+   {x:.25,y:6.55,w:.85,d:.55,h:.85,col:0xf2f2ef},
+   {x:1.4,y:6.68,w:.42,d:.56,h:.4,col:0xf2f2ef},
+   {x:2.25,y:5.1,w:.6,d:.6,h:.85,col:0xf2f2ef},
+   {x:.25,y:7.45,w:3.6,d:.55,h:2.0,col:0xd9d4ca,hatch:1},
+   {x:.55,y:9.3,w:3.3,d:.55,h:2.0,col:0xd9d4ca,hatch:1},
+   {x:4.65,y:7.72,w:.5,d:1.15,h:1.9,col:0xd9d4ca,hatch:1},
+   {x:8.6,y:3.68,w:1.6,d:2.0,h:.5,col:0xd9d2c4,bed:1},{x:8.15,y:3.68,w:.4,d:.4,h:.45,col:0x8a5a34},{x:10.25,y:3.68,w:.4,d:.4,h:.45,col:0x8a5a34},
+   {x:7.2,y:3.68,w:.55,d:1.45,h:2.1,col:0xe5e1d8},
+   {x:8.6,y:6.68,w:1.6,d:2.0,h:.5,col:0xd9d2c4,bed:1},{x:8.15,y:6.68,w:.4,d:.4,h:.45,col:0x8a5a34},{x:10.25,y:6.68,w:.4,d:.4,h:.45,col:0x8a5a34},
+   {x:7.2,y:7.85,w:.55,d:1.95,h:2.1,col:0xe5e1d8},
+   {x:9.7,y:1.55,w:1.2,d:.85,h:.75,sh:'o',col:0x2c3238},{x:9.2,y:1.78,w:.4,d:.4,h:.45,col:0x2c3238},{x:11.0,y:1.78,w:.4,d:.4,h:.45,col:0x2c3238},
+   {x:7.35,y:1.2,w:.65,d:1.7,h:.42,col:0xf4f4f1},
+   {x:-3.75,y:4.25,w:.6,d:.6,h:1.6,col:0xcfd3d6,boil:1}
+  ],
+  features:['<b>Дом ровно 100 м²</b>, терраса 17,5 м² под общей крышей и гараж 24 м² с котельной зоной.','<b>Кухня-гостиная 34,3 м²</b> с панорамным окном в сад и раздвижным выходом на террасу; изолированный тамбур с крытой входной нишей.','<b>Две спальни 15 и 17,5 м²</b> с отдельными дверями из коридора и полноценными местами под шкафы.']},
+
+ {name:'Центральная галерея',title:'Вариант 3 · Вытянутый дом 15 × 8 м',
+  description:'Зонированная планировка для широкого участка: левое крыло отдано тихим квадратным спальням 16,8 м², по центру — входная группа и санузел, справа — сквозная кухня-гостиная 43,2 м² и терраса.',
+  w:15,d:8,garage:{x:15,y:2,w:4,h:6},niche:{x:4.2,y:7.0,w:2.2,h:1.0},entry:{x:5.3,y:7.0},garageDoor:6.5,terraceSteps:{x:13.4,y:0},
+  rooms:[
+   {n:'Спальня 1',x:0,y:0,w:4.2,h:4.0,f:'wood',lx:2.35,ly:2.65,fs:.28},
+   {n:'Спальня 2',x:0,y:4.0,w:4.2,h:4.0,f:'wood',lx:3.1,ly:6.95,fs:.28},
+   {n:'Ванная и туалет',x:4.2,y:0,w:2.2,h:2.9,f:'tile',lines:['Ванная','и туалет'],lx:5.3,ly:1.85,fs:.22},
+   {n:'Коридор',x:4.2,y:2.9,w:2.2,h:2.3,f:'tile',lx:5.3,ly:4.0,fs:.24},
+   {n:'Тамбур',x:4.2,y:5.2,w:2.2,h:1.8,f:'tile',lx:5.05,ly:6.1,fs:.24},
+   {n:'Зал и кухня',x:6.4,y:0,w:5.4,h:8.0,f:'wood',lx:8.85,ly:3.75,fs:.31},
+   {n:'Терраса',x:11.8,y:0,w:3.2,h:5.0,f:'deck',out:1,lx:13.4,ly:1.2,fs:.28},
+   {n:'Гардероб',x:11.8,y:5.0,w:3.2,h:3.0,f:'tile',lx:13.4,ly:6.45,fs:.26}
+  ],
+  ops:[wV(0,2.0,1.6),wV(0,6.0,1.6),wH(8,2.1,1.4),wH(0,5.3,.8),pH(0,9.1,3.2),wH(8,9.1,2.0),tV(11.8,2.5,1.8,-1),
+   dV(4.2,3.45,.9,-1),dV(4.2,4.6,.9,-1),dH(2.9,5.3,.8,-1),oV(6.4,4.05,1.4),dH(5.2,5.3,.9,-1),dH(7.0,5.3,1.0,1),dV(11.8,6.5,.9,1)],
+  fur:[
+   {x:1.3,y:.22,w:1.6,d:2.0,h:.5,col:0xd9d2c4,bed:1},{x:.85,y:.22,w:.4,d:.4,h:.45,col:0x8a5a34},{x:2.95,y:.22,w:.4,d:.4,h:.45,col:0x8a5a34},
+   {x:.25,y:3.25,w:2.1,d:.55,h:2.1,col:0xe5e1d8},
+   {x:1.3,y:4.2,w:1.6,d:2.0,h:.5,col:0xd9d2c4,bed:1},{x:.85,y:4.2,w:.4,d:.4,h:.45,col:0x8a5a34},{x:2.95,y:4.2,w:.4,d:.4,h:.45,col:0x8a5a34},
+   {x:.25,y:7.25,w:1.5,d:.55,h:2.1,col:0xe5e1d8},
+   {x:4.35,y:.22,w:1.7,d:.72,h:.55,col:0xf2f2ef},
+   {x:4.35,y:1.2,w:.52,d:.48,h:.85,col:0xf2f2ef},
+   {x:5.7,y:1.15,w:.55,d:.45,h:.4,col:0xf2f2ef},
+   {x:5.8,y:5.45,w:.48,d:1.3,h:1.9,col:0xd9d4ca,hatch:1},
+   {x:8.0,y:.22,w:2.0,d:.38,h:.5,col:0x2a2e33},
+   {x:7.4,y:1.8,w:2.9,d:.9,h:.8,col:0x6d7a82,pil:1},
+   {x:8.3,y:.95,w:1.0,d:.45,h:.4,sh:'o',col:0xc9a77c},
+   {x:8.55,y:4.5,w:1.8,d:.95,h:.75,sh:'o',col:0xb87a45},
+   {x:8.05,y:4.78,w:.38,d:.38,h:.45,col:0x3b4248},{x:10.45,y:4.78,w:.38,d:.38,h:.45,col:0x3b4248},
+   {x:7.0,y:6.95,w:4.1,d:.6,h:.9,col:0xe5e1d8,kit:1},
+   {x:12.8,y:2.25,w:1.3,d:.9,h:.75,sh:'o',col:0x2c3238},{x:12.3,y:2.5,w:.4,d:.4,h:.45,col:0x2c3238},{x:14.2,y:2.5,w:.4,d:.4,h:.45,col:0x2c3238},
+   {x:12.4,y:3.85,w:1.8,d:.65,h:.42,col:0xf4f4f1},
+   {x:12.0,y:5.2,w:2.7,d:.52,h:2.0,col:0xd9d4ca,hatch:1},
+   {x:12.0,y:7.3,w:2.7,d:.52,h:2.0,col:0xd9d4ca,hatch:1},
+   {x:15.2,y:2.25,w:.6,d:.6,h:1.6,col:0xcfd3d6,boil:1}
+  ],
+  features:['<b>Без комнат-вагонов</b>: две полноценные квадратные спальни по 16,8 м² изолированы в левом крыле вместе с санузлом 6,4 м².','<b>Просторная гостиная 43,2 м²</b> со сквозным светом (окна в сад и на улицу) и выходом на террасу 16 м².','<b>Углублённый вход с тамбуром</b> по центру разделяет тихую и общую зоны; справа — гардероб 9,6 м² с проходом в гараж.']},
+
+ {name:'Компактный',title:'Вариант 4 · Компактный дом 11 × 10 м',
+  description:'Компактный контур 11 × 10 м: 97,8 м² тёплого дома без потери удобства — углублённая входная ниша, просторная гостиная, две спальни и полный хозблок.',
+  w:11,d:10,garage:{x:-4,y:4,w:4,h:6},niche:{x:4.5,y:9.1,w:2.5,h:.9},entry:{x:5.75,y:9.1},garageDoor:8.6,terraceSteps:{x:9.0,y:0},
+  rooms:[
+   {n:'Зал и кухня',x:0,y:0,w:7.0,h:5.0,f:'wood',lx:2.65,ly:3.3,fs:.3},
+   {n:'Терраса',x:7.0,y:0,w:4.0,h:2.5,f:'deck',out:1,lx:9.0,ly:.75,fs:.27},
+   {n:'Ванная и туалет',x:0,y:5.0,w:4.5,h:2.3,f:'tile',lines:['Ванная','и туалет'],lx:2.85,ly:6.0,fs:.25},
+   {n:'Гардероб',x:0,y:7.3,w:4.5,h:2.7,f:'tile',lx:2.25,ly:8.65,fs:.28},
+   {n:'Коридор',x:4.5,y:5.0,w:2.5,h:2.7,f:'tile',lx:5.75,ly:6.3,fs:.26},
+   {n:'Тамбур',x:4.5,y:7.7,w:2.5,h:1.4,f:'tile',lx:5.75,ly:8.35,fs:.25},
+   {n:'Спальня 1',x:7.0,y:2.5,w:4.0,h:3.9,f:'wood',lx:9.55,ly:5.5,fs:.26},
+   {n:'Спальня 2',x:7.0,y:6.4,w:4.0,h:3.6,f:'wood',lx:9.55,ly:9.2,fs:.26}
+  ],
+  ops:[pH(0,3.5,3.2),pV(0,2.2,2.2),tV(7.0,1.25,1.6,-1),wV(11,4.45,1.6),wV(11,8.2,1.6),wH(10,9.0,1.4),
+   oH(5.0,5.75,1.4),dV(4.5,6.15,.8,-1),dV(4.5,8.4,.8,-1),dH(7.7,5.75,.9,-1),dV(7.0,5.7,.9,1),dV(7.0,7.05,.9,1),dH(9.1,5.75,1.0,1)],
+  fur:[
+   {x:2.3,y:.22,w:2.0,d:.38,h:.5,col:0x2a2e33},
+   {x:1.3,y:1.65,w:3.0,d:.9,h:.8,col:0x6d7a82,pil:1},
+   {x:2.3,y:.95,w:1.0,d:.45,h:.4,sh:'o',col:0xc9a77c},
+   {x:4.8,y:2.9,w:1.7,d:.95,h:.75,sh:'o',col:0xb87a45},
+   {x:4.35,y:3.18,w:.38,d:.38,h:.45,col:0x3b4248},{x:6.55,y:3.18,w:.38,d:.38,h:.45,col:0x3b4248},
+   {x:.25,y:4.25,w:4.1,d:.6,h:.9,col:0xe5e1d8,kit:1},
+   {x:.25,y:5.2,w:1.7,d:.72,h:.55,col:0xf2f2ef},
+   {x:.25,y:6.55,w:.85,d:.55,h:.85,col:0xf2f2ef},
+   {x:1.4,y:6.65,w:.42,d:.56,h:.4,col:0xf2f2ef},
+   {x:2.25,y:5.2,w:.6,d:.6,h:.85,col:0xf2f2ef},
+   {x:.25,y:7.45,w:3.6,d:.55,h:2.0,col:0xd9d4ca,hatch:1},
+   {x:.55,y:9.3,w:3.3,d:.55,h:2.0,col:0xd9d4ca,hatch:1},
+   {x:4.65,y:7.82,w:.5,d:1.15,h:1.9,col:0xd9d4ca,hatch:1},
+   {x:8.5,y:2.7,w:1.6,d:2.0,h:.5,col:0xd9d2c4,bed:1},{x:8.05,y:2.7,w:.4,d:.4,h:.45,col:0x8a5a34},{x:10.15,y:2.7,w:.4,d:.4,h:.45,col:0x8a5a34},
+   {x:7.2,y:2.7,w:.55,d:1.8,h:2.1,col:0xe5e1d8},
+   {x:8.5,y:6.6,w:1.6,d:2.0,h:.5,col:0xd9d2c4,bed:1},{x:8.05,y:6.6,w:.4,d:.4,h:.45,col:0x8a5a34},{x:10.15,y:6.6,w:.4,d:.4,h:.45,col:0x8a5a34},
+   {x:7.2,y:7.85,w:.55,d:1.95,h:2.1,col:0xe5e1d8},
+   {x:8.4,y:1.35,w:1.2,d:.85,h:.75,sh:'o',col:0x2c3238},{x:7.9,y:1.58,w:.4,d:.4,h:.45,col:0x2c3238},{x:9.7,y:1.58,w:.4,d:.4,h:.45,col:0x2c3238},
+   {x:-3.75,y:4.25,w:.6,d:.6,h:1.6,col:0xcfd3d6,boil:1}
+  ],
+  features:['<b>Компактный дом 97,8 м²</b> в ровном прямоугольнике 11 × 10 м: почти равен исходному эскизу, но без лишних углов фасада.','<b>Кухня-гостиная 35 м²</b> и две изолированные спальни 15,6 и 14,4 м² со входами из общего коридора.','<b>Гардероб 12,2 м² и санузел 10,4 м²</b> сгруппированы у гаража 24 м², как в исходном проекте.']},
+
+ {name:'Большая гостиная',title:'Вариант 5 · Большая кухня-гостиная 12 × 10 м',
+  description:'Альтернативная компоновка в контуре 12 × 10 м: увеличенная кухня-гостиная 43,2 м² и выделенная постирочная рядом с ванной и гардеробом.',
+  w:12,d:10,garage:{x:-4,y:4,w:4,h:6},niche:{x:5.8,y:9.1,w:2.2,h:.9},entry:{x:6.9,y:9.1},garageDoor:8.8,terraceSteps:{x:10.0,y:0},
+  rooms:[
+   {n:'Зал и кухня',x:0,y:0,w:8.0,h:5.4,f:'wood',lx:2.95,ly:3.5,fs:.31},
+   {n:'Терраса',x:8.0,y:0,w:4.0,h:3.5,f:'deck',out:1,lx:9.8,ly:1.05,fs:.28},
+   {n:'Постирочная',x:0,y:5.4,w:2.8,h:2.4,f:'tile',lx:1.4,ly:6.55,fs:.23},
+   {n:'Ванная и туалет',x:2.8,y:5.4,w:3.0,h:2.4,f:'tile',lines:['Ванная','и туалет'],lx:4.35,ly:6.1,fs:.23},
+   {n:'Гардероб',x:0,y:7.8,w:5.8,h:2.2,f:'tile',lx:3.1,ly:8.9,fs:.28},
+   {n:'Коридор',x:5.8,y:5.4,w:2.2,h:2.3,f:'tile',lx:6.9,ly:6.5,fs:.24},
+   {n:'Тамбур',x:5.8,y:7.7,w:2.2,h:1.4,f:'tile',lx:6.9,ly:8.35,fs:.24},
+   {n:'Спальня 1',x:8.0,y:3.5,w:4.0,h:3.1,f:'wood',lx:10.7,ly:5.95,fs:.25},
+   {n:'Спальня 2',x:8.0,y:6.6,w:4.0,h:3.4,f:'wood',lx:10.7,ly:9.25,fs:.25}
+  ],
+  ops:[pH(0,4.0,3.6),pV(0,2.4,2.4),tV(8.0,1.75,1.8,-1),wV(12,5.05,1.6),wV(12,8.3,1.6),wH(10,10.0,1.4),
+   oH(5.4,6.9,1.4),dV(5.8,6.55,.8,-1),dH(7.8,1.4,.8,-1),dV(5.8,8.45,.8,-1),dH(7.7,6.9,.9,-1),dV(8.0,6.0,.9,1),dV(8.0,7.15,.9,1),dH(9.1,6.9,1.0,1)],
+  fur:[
+   {x:2.6,y:.22,w:2.2,d:.38,h:.5,col:0x2a2e33},
+   {x:1.4,y:1.8,w:3.2,d:.9,h:.8,col:0x6d7a82,pil:1},
+   {x:2.5,y:1.05,w:1.0,d:.45,h:.4,sh:'o',col:0xc9a77c},
+   {x:5.4,y:3.0,w:1.8,d:.95,h:.75,sh:'o',col:0xb87a45},
+   {x:4.95,y:3.28,w:.38,d:.38,h:.45,col:0x3b4248},{x:7.25,y:3.28,w:.38,d:.38,h:.45,col:0x3b4248},
+   {x:.3,y:4.65,w:4.3,d:.6,h:.9,col:0xe5e1d8,kit:1},
+   {x:.25,y:5.58,w:.68,d:.65,h:.85,col:0xf2f2ef},{x:1.05,y:5.58,w:.68,d:.65,h:.85,col:0xf2f2ef},
+   {x:1.85,y:5.58,w:.75,d:.55,h:.85,col:0xe5e1d8},
+   {x:2.95,y:5.58,w:.75,d:1.65,h:.55,col:0xf2f2ef},
+   {x:3.9,y:7.18,w:.42,d:.52,h:.4,col:0xf2f2ef},
+   {x:5.0,y:7.15,w:.6,d:.5,h:.85,col:0xf2f2ef},
+   {x:1.9,y:7.95,w:3.3,d:.5,h:2.0,col:0xd9d4ca,hatch:1},
+   {x:.55,y:9.35,w:4.5,d:.5,h:2.0,col:0xd9d4ca,hatch:1},
+   {x:5.95,y:7.82,w:.45,d:1.1,h:1.9,col:0xd9d4ca,hatch:1},
+   {x:9.45,y:3.68,w:1.6,d:2.0,h:.5,col:0xd9d2c4,bed:1},{x:9.0,y:3.68,w:.4,d:.4,h:.45,col:0x8a5a34},{x:11.1,y:3.68,w:.4,d:.4,h:.45,col:0x8a5a34},
+   {x:8.2,y:3.68,w:.55,d:1.6,h:2.1,col:0xe5e1d8},
+   {x:9.45,y:6.78,w:1.6,d:2.0,h:.5,col:0xd9d2c4,bed:1},{x:9.0,y:6.78,w:.4,d:.4,h:.45,col:0x8a5a34},{x:11.1,y:6.78,w:.4,d:.4,h:.45,col:0x8a5a34},
+   {x:8.2,y:7.9,w:.55,d:1.9,h:2.1,col:0xe5e1d8},
+   {x:9.4,y:1.65,w:1.2,d:.85,h:.75,sh:'o',col:0x2c3238},{x:8.9,y:1.88,w:.4,d:.4,h:.45,col:0x2c3238},{x:10.7,y:1.88,w:.4,d:.4,h:.45,col:0x2c3238},
+   {x:8.35,y:2.65,w:1.8,d:.6,h:.42,col:0xf4f4f1},
+   {x:-3.75,y:4.25,w:.6,d:.6,h:1.6,col:0xcfd3d6,boil:1}
+  ],
+  features:['<b>Кухня-гостиная 43,2 м²</b> — почти на 9 м² просторнее, чем в варианте 2 при том же контуре 12 × 10 м.','<b>Отдельная постирочная 6,7 м²</b> рядом с ванной и гардеробом разгружает санузел от техники и сушки.','<b>Дом 104 м²</b>: чёткий хозяйственный узел, тамбур с нишей и две спальни 12,4 и 13,6 м².']},
+
+ {name:'120 м²',title:'Вариант 6 · Просторный дом 14 × 10 м',
+  description:'Просторный одноэтажный дом ровно 120 м²: огромная кухня-гостиная 43,7 м², широкие спальни 18,5 и 19,6 м², отдельная постирочная и гардероб 14,4 м² с выходом в гараж.',
+  w:14,d:10,garage:{x:-4,y:4,w:4,h:6},niche:{x:6.0,y:9.15,w:2.4,h:.85},entry:{x:7.2,y:9.15},garageDoor:8.8,terraceSteps:{x:11.2,y:0},
+  rooms:[
+   {n:'Зал и кухня',x:0,y:0,w:8.4,h:5.2,f:'wood',lx:3.1,ly:3.4,fs:.32},
+   {n:'Терраса',x:8.4,y:0,w:5.6,h:3.2,f:'deck',out:1,lx:11.4,ly:.9,fs:.3},
+   {n:'Постирочная',x:0,y:5.2,w:2.8,h:2.4,f:'tile',lx:1.4,ly:6.4,fs:.23},
+   {n:'Ванная и туалет',x:2.8,y:5.2,w:3.2,h:2.4,f:'tile',lines:['Ванная','и туалет'],lx:4.5,ly:6.0,fs:.24},
+   {n:'Гардероб',x:0,y:7.6,w:6.0,h:2.4,f:'tile',lx:3.2,ly:8.8,fs:.29},
+   {n:'Коридор',x:6.0,y:5.2,w:2.4,h:2.5,f:'tile',lx:7.2,ly:6.4,fs:.25},
+   {n:'Тамбур',x:6.0,y:7.7,w:2.4,h:1.45,f:'tile',lx:7.2,ly:8.38,fs:.25},
+   {n:'Спальня 1',x:8.4,y:3.2,w:5.6,h:3.3,f:'wood',lx:12.6,ly:5.6,fs:.28},
+   {n:'Спальня 2',x:8.4,y:6.5,w:5.6,h:3.5,f:'wood',lx:12.6,ly:9.05,fs:.28}
+  ],
+  ops:[pH(0,4.2,3.8),pV(0,2.3,2.4),tV(8.4,1.6,1.8,-1),wV(14,4.85,1.6),wV(14,8.25,1.6),wH(10,11.2,1.6),
+   oH(5.2,7.2,1.5),dV(6.0,6.4,.8,-1),dH(7.6,1.4,.8,-1),dV(6.0,8.4,.8,-1),dH(7.7,7.2,.9,-1),dV(8.4,5.85,.9,1),dV(8.4,7.1,.9,1),dH(9.15,7.2,1.0,1)],
+  fur:[
+   {x:2.7,y:.22,w:2.2,d:.38,h:.5,col:0x2a2e33},
+   {x:1.5,y:1.75,w:3.4,d:.95,h:.8,col:0x6d7a82,pil:1},
+   {x:2.7,y:1.0,w:1.0,d:.45,h:.4,sh:'o',col:0xc9a77c},
+   {x:5.7,y:2.85,w:1.9,d:.95,h:.75,sh:'o',col:0xb87a45},
+   {x:5.25,y:3.13,w:.38,d:.38,h:.45,col:0x3b4248},{x:7.65,y:3.13,w:.38,d:.38,h:.45,col:0x3b4248},
+   {x:.3,y:4.45,w:4.5,d:.6,h:.9,col:0xe5e1d8,kit:1},
+   {x:.25,y:5.38,w:.68,d:.65,h:.85,col:0xf2f2ef},{x:1.05,y:5.38,w:.68,d:.65,h:.85,col:0xf2f2ef},
+   {x:1.85,y:5.38,w:.75,d:.55,h:.85,col:0xe5e1d8},
+   {x:2.95,y:5.38,w:.75,d:1.7,h:.55,col:0xf2f2ef},
+   {x:4.0,y:6.98,w:.42,d:.52,h:.4,col:0xf2f2ef},
+   {x:5.2,y:6.95,w:.6,d:.5,h:.85,col:0xf2f2ef},
+   {x:2.0,y:7.75,w:3.4,d:.52,h:2.0,col:0xd9d4ca,hatch:1},
+   {x:.6,y:9.3,w:4.7,d:.52,h:2.0,col:0xd9d4ca,hatch:1},
+   {x:6.15,y:7.82,w:.48,d:1.15,h:1.9,col:0xd9d4ca,hatch:1},
+   {x:10.4,y:3.4,w:1.6,d:2.0,h:.5,col:0xd9d2c4,bed:1},{x:9.95,y:3.4,w:.4,d:.4,h:.45,col:0x8a5a34},{x:12.05,y:3.4,w:.4,d:.4,h:.45,col:0x8a5a34},
+   {x:8.6,y:3.4,w:.55,d:1.8,h:2.1,col:0xe5e1d8},
+   {x:10.4,y:6.7,w:1.6,d:2.0,h:.5,col:0xd9d2c4,bed:1},{x:9.95,y:6.7,w:.4,d:.4,h:.45,col:0x8a5a34},{x:12.05,y:6.7,w:.4,d:.4,h:.45,col:0x8a5a34},
+   {x:8.6,y:7.9,w:.55,d:1.9,h:2.1,col:0xe5e1d8},
+   {x:11.4,y:1.35,w:1.3,d:.9,h:.75,sh:'o',col:0x2c3238},{x:10.9,y:1.6,w:.4,d:.4,h:.45,col:0x2c3238},{x:12.8,y:1.6,w:.4,d:.4,h:.45,col:0x2c3238},
+   {x:8.75,y:.95,w:.65,d:1.7,h:.42,col:0xf4f4f1},
+   {x:-3.75,y:4.25,w:.6,d:.6,h:1.6,col:0xcfd3d6,boil:1}
+  ],
+  features:['<b>Дом 120 м²</b>: просторные спальни 18,5 и 19,6 м² и большая кухня-гостиная 43,7 м² с выходом на террасу 17,9 м².','<b>Выделенная постирочная 6,7 м²</b>, ванная 7,7 м² и сквозной гардероб 14,4 м² между тамбуром и гаражом.','<b>Гараж 24 м²</b> с местом для котла и удобным входом под крышей, не выходя на улицу.']}
 ];
 const variantHouse=v=>v.rooms.filter(r=>!r.out).reduce((s,r)=>s+r.w*r.h,0);
 const variantTerrace=v=>v.rooms.filter(r=>r.out).reduce((s,r)=>s+r.w*r.h,0);
 const variantTotal=v=>variantHouse(v)+variantTerrace(v)+v.garage.w*v.garage.h;
 function variantWalls(v){
-  const edges=[];
+  const edges=[], eps=1e-4;
   v.rooms.filter(r=>!r.out).forEach(r=>{
     edges.push({hor:1,c:r.y,s:r.x,e:r.x+r.w},{hor:1,c:r.y+r.h,s:r.x,e:r.x+r.w},{hor:0,c:r.x,s:r.y,e:r.y+r.h},{hor:0,c:r.x+r.w,s:r.y,e:r.y+r.h});
   });
   const groups=new Map();
-  edges.forEach(e=>{const k=(e.hor?'h':'v')+':'+e.c;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(e)});
-  const walls=[];
+  edges.forEach(e=>{const k=(e.hor?'h':'v')+':'+e.c.toFixed(3);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(e)});
+  const g=v.garage, gd=v.garageDoor, left=g.x<0, sharedX=left?g.x+g.w:g.x, outerX=left?g.x:g.x+g.w;
+  const raw=[];
   groups.forEach(list=>{
-    const cuts=[...new Set(list.flatMap(e=>[e.s,e.e]))].sort((a,b)=>a-b);
+    const cuts=[...new Set(list.flatMap(e=>[+e.s.toFixed(3),+e.e.toFixed(3)]))].sort((a,b)=>a-b);
     let start=null,count=0;
-    const flush=end=>{if(start===null||end<=start)return;const hor=list[0].hor,c=list[0].c;
-      const wall={a:hor?[start,c]:[c,start],b:hor?[end,c]:[c,end],t:count>1?.1:.4,ext:count===1,ex:[0,0],o:[]};
-      const sharedX=v.garage.x<0?v.garage.x+v.garage.w:v.garage.x;
-      [...v.ops,dV(sharedX,v.garageDoor)].forEach(q=>{if(q.hor===hor&&Math.abs(q.c-c)<.001&&q.p>=start&&q.p<=end)wall.o.push({...q})});
-      walls.push(wall);start=null;};
+    const flush=end=>{if(start===null||end<=start+eps||count===0){start=null;return;}const hor=list[0].hor,c=list[0].c;
+      const wall={hor,c,s:start,e:end,a:hor?[start,c]:[c,start],b:hor?[end,c]:[c,end],t:count>1?.1:.4,ext:count===1,ex:[0,0],o:[]};
+      [...v.ops,dV(sharedX,gd,.9,left?1:-1)].forEach(q=>{if(q.hor===hor&&Math.abs(q.c-c)<.01&&q.p>=start-eps&&q.p<=end+eps)wall.o.push({...q})});
+      raw.push(wall);start=null;};
     for(let i=0;i<cuts.length-1;i++){
       const a=cuts[i],b=cuts[i+1],mid=(a+b)/2,n=list.filter(e=>e.s<mid&&e.e>mid).length;
       if(start===null){start=a;count=n}else if(n!==count){flush(a);start=a;count=n}
     }
     flush(cuts.at(-1));
   });
-  const g=v.garage, gd=v.garageDoor,left=g.x<0,sharedX=left?g.x+g.w:g.x,outerX=left?g.x:g.x+g.w;
+  const walls=raw.map(w=>{
+    const perpAt=pt=>raw.reduce((mx,u)=>u.hor!==w.hor&&Math.abs(u.c-pt)<.01&&w.c>=u.s-eps&&w.c<=u.e+eps?Math.max(mx,u.t):mx,0);
+    const t0=perpAt(w.s), t1=perpAt(w.e);
+    w.ex=[w.ext&&t0?t0/2:(t0?.05:0), w.ext&&t1?t1/2:(t1?.05:0)];
+    return w;
+  });
+  const sharedCover=walls.some(w=>!w.hor&&Math.abs(w.c-sharedX)<.01&&w.s<=g.y+eps&&w.e>=g.y+g.h-eps);
   walls.push(
-    {a:[g.x,g.y],b:[g.x+g.w,g.y],t:.3,ext:1,gar:1,ex:[0,0],o:[]},
-    {a:[sharedX,g.y],b:[sharedX,g.y+g.h],t:.3,ext:1,gar:1,ex:[0,0],o:[{...dV(sharedX,gd)}]},
-    {a:[outerX,g.y],b:[outerX,g.y+g.h],t:.3,ext:1,gar:1,ex:[0,0],o:[{p:g.y+2,w:.8,s:1.4,h:.6,k:'win'}]},
-    {a:[g.x,g.y+g.h],b:[g.x+g.w,g.y+g.h],t:.3,ext:1,gar:1,ex:[0,0],o:[{p:g.x+g.w/2,w:3,s:0,h:2.4,k:'gate'}]}
+    {a:[g.x,g.y],b:[g.x+g.w,g.y],t:.3,ext:1,gar:1,ex:[.15,left&&sharedCover?-.2:.15],o:[]},
+    {a:[outerX,g.y],b:[outerX,g.y+g.h],t:.3,ext:1,gar:1,ex:[.15,.15],o:[{p:g.y+2,w:.8,s:1.4,h:.6,k:'win'}]},
+    {a:[g.x,g.y+g.h],b:[g.x+g.w,g.y+g.h],t:.3,ext:1,gar:1,ex:[left?.15:-.2,left?-.2:.15],o:[{p:g.x+g.w/2,w:3,s:0,h:2.4,k:'gate'}]}
   );
+  if(!sharedCover){
+    walls.push({a:[sharedX,g.y],b:[sharedX,g.y+g.h],t:.3,ext:1,gar:1,ex:[.15,.15],o:[{...dV(sharedX,gd,.9,left?1:-1)}]});
+  }
   return walls;
 }
-function variantFurniture(v){
-  const out=[],sharedX=v.garage.x<0?v.garage.x+v.garage.w:v.garage.x,ops=[...v.ops,{hor:0,c:sharedX,p:v.garageDoor,k:'door'}];
-  v.rooms.forEach(r=>{
-    const leftDoor=ops.some(o=>!o.hor&&Math.abs(o.c-r.x)<.001&&['door','open'].includes(o.k)),rightDoor=ops.some(o=>!o.hor&&Math.abs(o.c-(r.x+r.w))<.001&&['door','open'].includes(o.k));
-    if(r.n==='Зал и кухня'){
-      out.push({x:r.x+.3,y:r.y+r.h-.9,w:Math.min(4,r.w-.6),d:.6,h:.9,col:0xe5e1d8,kit:1},
-        leftDoor?{x:r.x+r.w-3.5,y:r.y+1.8,w:3,d:.9,h:.8,col:0x6d7a82,pil:1}:{x:r.x+.7,y:r.y+1.5,w:3,d:.9,h:.8,col:0x6d7a82,pil:1},
-        {x:r.x+1,y:r.y+.2,w:2,d:.35,h:.5,col:0x2a2e33},
-        leftDoor?{x:r.x+r.w-2.2,y:r.y+.3,w:1.8,d:.9,h:.75,sh:'o',col:0xb87a45}:{x:r.x+r.w-2.7,y:r.y+1.2,w:1.8,d:.9,h:.75,sh:'o',col:0xb87a45});
-    }else if(/^Спальня/.test(r.n)){
-      out.push({x:r.x+r.w/2-.8,y:r.y+.35,w:1.6,d:2,h:.5,col:0xd9d2c4,bed:1},
-        {x:leftDoor?r.x+r.w-2:r.x+.2,y:r.y+r.h-.65,w:1.8,d:.5,h:2.1,col:0xe5e1d8});
-    }else if(r.n==='Ванная и туалет'){
-      out.push({x:r.x+.15,y:r.y+.2,w:Math.min(1.7,r.w-.3),d:.72,h:.55,col:0xf2f2ef},
-        {x:r.x+2,y:r.y+r.h-.85,w:.42,d:.62,h:.4,col:0xf2f2ef},
-        {x:r.x+2,y:r.y+.2,w:.55,d:.5,h:.85,col:0xf2f2ef});
-    }else if(r.n==='Гардероб'){
-      const x=r.x+(leftDoor?1.05:.15),end=r.x+r.w-(rightDoor?1.05:.15);
-      out.push({x,y:r.y+.15,w:end-x,d:.5,h:2,col:0xd9d4ca,hatch:1});
-    }else if(r.n==='Прихожая'){
-      out.push({x:r.x+.15,y:r.y+.15,w:Math.min(1.6,r.w-.3),d:.5,h:1.8,col:0xd9d4ca,hatch:1});
-    }else if(r.n==='Постирочная'){
-      out.push({x:r.x+.2,y:r.y+.25,w:.65,d:.65,h:.85,col:0xf2f2ef},{x:r.x+.95,y:r.y+.25,w:.65,d:.65,h:.85,col:0xf2f2ef});
-    }else if(r.out){
-      out.push({x:r.x+r.w/2-.8,y:r.y+r.h/2-.45,w:1.6,d:.9,h:.75,sh:'o',col:0x2c3238});
-    }
-  });
-  return out;
-}
+function variantFurniture(v){return v.fur||[];}
 function buildVariantPlan(v){
   if(v.original)return buildPlan();
-  const g=v.garage, minX=Math.min(-1.8,g.x-1.8), maxX=Math.max(v.w+2,g.x+g.w+1.8), maxY=Math.max(v.d,g.y+g.h)+2.1;
-  let s=`<svg viewBox="${minX} -2.3 ${maxX-minX} ${maxY+2.3}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${v.title}">`+DEFS;
+  const g=v.garage, minX=Math.min(-1.8,g.x-1.8), maxX=Math.max(v.w+2,g.x+g.w+2), maxY=Math.max(v.d,g.y+g.h)+2.1;
+  let s=`<svg viewBox="${minX} -2.6 ${maxX-minX} ${maxY+2.6}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${v.title}">`+DEFS;
   v.rooms.forEach(r=>s+=`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="var(${FILL[r.f]})"/>`);
   s+=`<rect x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" fill="var(--fl-tile)"/>`;
+  if(v.niche){
+    const n=v.niche;
+    s+=`<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="var(--wood-soft)"/>`;
+    s+=`<g stroke="var(--ink2)" stroke-width=".04" fill="var(--conc)"><rect x="${v.entry.x-1.1}" y="${v.d}" width="2.2" height=".45"/><rect x="${v.entry.x-1.25}" y="${v.d+.45}" width="2.5" height=".4"/></g>`;
+  }
+  if(v.terraceSteps){
+    const ts=v.terraceSteps;
+    s+=`<g stroke="var(--ink2)" stroke-width=".04" fill="var(--conc)"><rect x="${ts.x-1.1}" y="${ts.y-.55}" width="2.2" height=".55"/><rect x="${ts.x-1.25}" y="${ts.y-.95}" width="2.5" height=".4"/></g>`;
+    s+=`<text x="${ts.x}" y="${ts.y-1.15}" font-size=".23" text-anchor="middle" style="fill:var(--ink2)">ступени в сад</text>`;
+  }
   variantFurniture(v).forEach(f=>s+=furPlan(f));
   variantWalls(v).forEach(w=>s+=planWall(w));
   v.rooms.filter(r=>r.out).forEach(r=>{
-    s+=`<path d="M${r.x} ${r.y} H${r.x+r.w} V${r.y+r.h}" fill="none" stroke="var(--ink2)" stroke-width=".05" stroke-dasharray=".22 .12"/>`;
-    [[r.x+r.w-.08,r.y+.08],[r.x+r.w-.08,r.y+r.h-.08]].forEach(p=>s+=`<rect x="${p[0]-.1}" y="${p[1]-.1}" width=".2" height=".2" fill="var(--anth)"/>`);
+    const x0=r.x, x1=r.x+r.w, y0=r.y, y1=r.y+r.h;
+    s+=`<path d="M${x0} ${y0} H${x1} V${y1}" fill="none" stroke="var(--ink2)" stroke-width=".04" stroke-dasharray=".22 .12"/>`;
+    const posts=[[x1-.12,y0+.12],[x1-.12,y1-.12]];
+    if(r.w>4.2)posts.push([x0+r.w/2,y0+.12]);
+    posts.forEach(p=>s+=`<rect x="${p[0]-.11}" y="${p[1]-.11}" width=".22" height=".22" fill="var(--anth)"/>`);
   });
-  s+=`<rect x="${g.x+.7}" y="${g.y+1.8}" width="${g.w-1.4}" height="3.8" rx=".45" fill="var(--furn)" stroke="var(--ink2)" stroke-width=".035"/><rect x="${g.x+1}" y="${g.y+2.5}" width="${g.w-2}" height="1.4" rx=".2" fill="none" stroke="var(--ink2)" stroke-width=".03"/>`;
-  s+=`<text x="${g.x+g.w/2}" y="${g.y+.75}" font-size=".3" text-anchor="middle" font-weight="600">Гараж</text><text class="mono" x="${g.x+g.w/2}" y="${g.y+1.15}" font-size=".24" text-anchor="middle" style="fill:var(--ink2)">${fm(g.w*g.h)} м²</text>`;
-  s+=`<line x1="${g.x+.5}" y1="${g.y+g.h}" x2="${g.x+g.w-.5}" y2="${g.y+g.h}" stroke="var(--wood)" stroke-width=".16"/><text x="${g.x+g.w/2}" y="${g.y+g.h+.55}" font-size=".24" text-anchor="middle">ворота 3,0 м</text>`;
+  s+=`<rect x="${g.x+1.1}" y="${g.y+1.2}" width="1.8" height="4.2" rx=".45" fill="var(--furn)" stroke="var(--ink2)" stroke-width=".035"/><rect x="${g.x+1.3}" y="${g.y+2.2}" width="1.4" height="1.5" rx=".2" fill="none" stroke="var(--ink2)" stroke-width=".03"/>`;
+  const boil=variantFurniture(v).find(f=>f.boil);
+  if(boil)s+=`<text x="${boil.x+boil.w/2}" y="${boil.y+boil.d+.32}" font-size=".21" text-anchor="middle" style="fill:var(--ink2)">котёл</text>`;
+  s+=`<text x="${g.x+g.w/2}" y="${g.y+.65}" font-size=".3" text-anchor="middle" font-weight="600">Гараж</text><text class="mono" x="${g.x+g.w/2}" y="${g.y+1.0}" font-size=".24" text-anchor="middle" style="fill:var(--ink2)">${fm(g.w*g.h)} м²</text>`;
+  s+=`<text x="${g.x+g.w/2}" y="${g.y+g.h+.55}" font-size=".24" text-anchor="middle">ворота 3,0 м</text>`;
   v.rooms.forEach(r=>{
-    const lines=r.lines||[r.n], x=r.x+r.w/2, y=r.y+r.h/2, fs=r.w<2.5?.23:.29, start=y-(lines.length-1)*fs*.55-fs*.35;
+    const lines=r.lines||[r.n], x=r.lx??(r.x+r.w/2), y=r.ly??(r.y+r.h/2), fs=r.fs||(r.w<2.5?.23:.28), start=y-(lines.length-1)*fs*.55;
     lines.forEach((line,i)=>s+=`<text x="${x}" y="${start+i*fs*1.1}" font-size="${fs}" text-anchor="middle" font-weight="600">${line}</text>`);
     s+=`<text class="mono" x="${x}" y="${start+lines.length*fs*1.1}" font-size="${fs*.82}" text-anchor="middle" style="fill:var(--ink2)">${fm(r.w*r.h)} м²</text>`;
-    if(r.out)s+=`<text x="${x}" y="${start+(lines.length+1)*fs*1.1}" font-size=".2" text-anchor="middle" style="fill:var(--ink2)">под общей крышей</text>`;
+    if(r.out)s+=`<text x="${x}" y="${start+(lines.length+1)*fs*1.05}" font-size=".2" text-anchor="middle" style="fill:var(--ink2)">под общей крышей</text>`;
   });
   const e=v.entry;
-  s+=`<rect x="${e.x-.8}" y="${e.y}" width="1.6" height=".35" fill="var(--conc)" stroke="var(--ink2)" stroke-width=".03"/><line x1="${e.x}" y1="${e.y+.85}" x2="${e.x}" y2="${e.y+.15}" stroke="var(--ink2)" stroke-width=".04" marker-end="url(#ar)"/><text x="${e.x}" y="${e.y+1.35}" font-size=".27" text-anchor="middle" font-weight="600">ВХОД</text>`;
-  s+=`<text x="${v.w/2}" y="-1.85" font-size=".3" text-anchor="middle" style="fill:var(--ink2)">САД</text><text x="${v.w/2}" y="${v.d+1.8}" font-size=".32" text-anchor="middle" letter-spacing=".18em" style="fill:var(--ink2)">УЛИЦА</text>`;
-  s+=dim(0,-1.1,v.w,-1.1,fm(v.w)+' м')+dim(v.w+.85,0,v.w+.85,v.d,fm(v.d)+' м');
+  if(v.niche){
+    const nh=String(+v.niche.h.toFixed(2)).replace('.',',');
+    s+=`<text x="${e.x}" y="${v.d-v.niche.h/2+.06}" font-size=".19" text-anchor="middle" style="fill:var(--ink2)">ниша ${nh} м</text>`;
+    s+=`<text x="${e.x}" y="${v.d+1.25}" font-size=".28" text-anchor="middle" font-weight="600">ВХОД</text>`;
+  }else{
+    s+=`<rect x="${e.x-.8}" y="${e.y}" width="1.6" height=".35" fill="var(--conc)" stroke="var(--ink2)" stroke-width=".03"/><line x1="${e.x}" y1="${e.y+.85}" x2="${e.x}" y2="${e.y+.15}" stroke="var(--ink2)" stroke-width=".04" marker-end="url(#ar)"/><text x="${e.x}" y="${e.y+1.35}" font-size=".27" text-anchor="middle" font-weight="600">ВХОД</text>`;
+  }
+  s+=`<text x="${v.w/2}" y="-2.18" font-size=".3" text-anchor="middle" style="fill:var(--ink2)">САД</text><text x="${v.w/2}" y="${v.d+1.85}" font-size=".32" text-anchor="middle" letter-spacing=".18em" style="fill:var(--ink2)">УЛИЦА</text>`;
+  const rx=g.x>=v.w?g.x+g.w+.95:v.w+.95;
+  s+=dim(0,-1.58,v.w,-1.58,fm(v.w)+' м')+dim(rx,0,rx,v.d,fm(v.d)+' м');
   s+=dim(g.x,g.y+g.h+1.15,g.x+g.w,g.y+g.h+1.15,fm(g.w)+' м',.24);
   return s+'</svg>';
 }
@@ -1985,12 +2156,13 @@ function init3d(){
   if(g3)return; const stage=document.getElementById('stage'),model=VARIANTS[activeVariant],modelIndex=activeVariant;
   const W=model.w,D=model.d,ROOMS=model.rooms,ANNEX=model.garage;
   const WALLS=model.original?BASE_WALLS:variantWalls(model),FUR=model.original?BASE_FUR:variantFurniture(model);
-  const NICHE=model.original?BASE_NICHE:{x:model.entry.x-1,y:D-1,w:2,h:1};
-  const minX=Math.min(0,ANNEX.x),maxX=Math.max(W,ANNEX.x+ANNEX.w);
-  const PLOT=model.original?BASE_PLOT:{x:minX-3,y:-18,w:maxX-minX+6,d:D+26};
+  const NICHE=model.original?BASE_NICHE:(model.niche||{x:model.entry.x-1,y:D-1,w:2,h:1});
+  const minX=Math.min(0,ANNEX.x),maxX=Math.max(W,ANNEX.x+ANNEX.w),leftGarage=ANNEX.x<0;
+  const PLOT=model.original?BASE_PLOT:{x:minX-3.5,y:-18,w:maxX-minX+7,d:D+26};
   const FENCE_Y=model.original?BASE_FENCE_Y:D+5,WICKET=model.original?BASE_WICKET:[model.entry.x-.6,model.entry.x+.6];
-  const TREES_IN=model.original?BASE_TREES_IN:[[minX-1,-8,1.4],[W/2,-12,1.6],[maxX+1,-7,1.4],[maxX+1,2,1.1]];
-  const TREES_OUT=model.original?BASE_TREES_OUT:[[minX,FENCE_Y+1,.9],[maxX,FENCE_Y+1,1]];
+  const TREES_IN=model.original?BASE_TREES_IN:[[minX-2,-9,1.3],[W*.25,-14,1.5],[maxX+2.5,-9,1.3],[maxX+2.5,4,1.0]];
+  const gCenter=ANNEX.x+ANNEX.w/2;
+  const TREES_OUT=model.original?BASE_TREES_OUT:(leftGarage?[[minX-2,FENCE_Y+1,.9],[maxX+1.2,FENCE_Y+1,1]]:[[minX+1,FENCE_Y+1,.9],[maxX+2,FENCE_Y+1,1]]);
   let renderer;
   try{ renderer=new THREE.WebGLRenderer({antialias:true}); }catch(e){ stage.insertAdjacentHTML('afterbegin','<div class="nogl">3D не запустилось в этом браузере. План, участок и смета открываются на соседних вкладках.</div>'); g3={index:modelIndex}; return; }
   renderer.setPixelRatio(Math.min(devicePixelRatio||1,2)); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
@@ -2015,11 +2187,11 @@ function init3d(){
   const gnd=new THREE.Mesh(new THREE.PlaneGeometry(300,300),mat.grass); gnd.rotation.x=-Math.PI/2; gnd.position.set(5,-.02,0); gnd.receiveShadow=true; world.add(gnd);
   const P_=PLOT; box(world,P_.w,.04,P_.d,mat.lawn,P_.x+P_.w/2,0,P_.y+P_.d/2,false);
   box(world,80,.03,7,mat.asph,5,.0,FENCE_Y+8.5,false);
-  box(world,4.6,.06,4.0,mat.conc,ANNEX.x+ANNEX.w/2,.03,FENCE_Y+2,false);       // заезд
-  box(world,1.0,.06,FENCE_Y-D-.9,mat.conc,NICHE.x+NICHE.w/2,.03,(D+.9+FENCE_Y)/2,false);  // дорожка
+  box(world,4.6,.06,4.0,mat.conc,gCenter,.03,FENCE_Y+2,false);       // заезд
+  box(world,1.0,.06,FENCE_Y-D-.85,mat.conc,NICHE.x+NICHE.w/2,.03,(D+.85+FENCE_Y)/2,false);  // дорожка
   // забор
-  const fh=1.6, fz=(x1,x2,z,m=mat.fence)=>box(world,x2-x1,fh,.06,m,(x1+x2)/2,fh/2,z);
-  const leftGarage=ANNEX.x<0,gateL=leftGarage?ANNEX.x-.15:ANNEX.x+ANNEX.w/2-2.25,gateR=leftGarage?.15:ANNEX.x+ANNEX.w/2+2.25;
+  const fh=1.6, fz=(x1,x2,z,m=mat.fence)=>{if(x2-x1>.02)box(world,x2-x1,fh,.06,m,(x1+x2)/2,fh/2,z);};
+  const gateL=leftGarage?ANNEX.x-.15:gCenter-2.25,gateR=leftGarage?.15:gCenter+2.25;
   if(leftGarage){fz(P_.x,gateL,FENCE_Y); fz(gateR,WICKET[0],FENCE_Y); fz(WICKET[1],P_.x+P_.w,FENCE_Y)}
   else{fz(P_.x,WICKET[0],FENCE_Y); fz(WICKET[1],gateL,FENCE_Y); fz(gateR,P_.x+P_.w,FENCE_Y)}
   for(let x=WICKET[0];x<WICKET[1]-.01;x+=.14)box(world,.09,fh,.05,mat.gate,x+.07,fh/2,FENCE_Y,false);
@@ -2032,7 +2204,7 @@ function init3d(){
     world.add(tr);};
   TREES_IN.forEach((t,i)=>tree(t[0],t[1],t[2],i)); TREES_OUT.forEach((t,i)=>tree(t[0],t[1],t[2]*.9,i+1));
   // машина на парковке
-  const car=new THREE.Group(); car.position.set(ANNEX.x+ANNEX.w/2,F,ANNEX.y+ANNEX.h-2.8);
+  const car=new THREE.Group(); car.position.set(gCenter,F,ANNEX.y+ANNEX.h-2.8);
   const cm=M(0x4b5560,.35,.5); box(car,1.85,.62,4.3,cm,0,.62,0); box(car,1.6,.55,2.1,cm,0,1.18,.15); box(car,1.62,.42,1.9,glass,0,1.18,.15,false);
   [[-.85,-1.35],[.85,-1.35],[-.85,1.35],[.85,1.35]].forEach(p=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(.33,.33,.24,14),mat.frame);w.rotation.z=Math.PI/2;w.position.set(p[0],.33,p[1]);car.add(w)}); world.add(car);
 
@@ -2063,40 +2235,90 @@ function init3d(){
     seg(cur,e,0,H);
   }
   WALLS.forEach(addWall);
-  // цоколь тёмной полосой
+  // цоколь тёмной полосой строго по глухим/оконным участкам внешних стен
   if(model.original){
     box(house,6.4,.45,.02,mat.plinth,3,.22,-.21,false);
     box(house,4.2,.45,.02,mat.plinth,2.0,.22,D+.21,false); box(house,5.2,.45,.02,mat.plinth,8.6,.22,D+.21,false);
     box(house,.02,.45,7.8,mat.plinth,-.21,.22,3.9,false); box(house,.02,.45,D-3.6,mat.plinth,W+.21,.22,(3.6+D)/2+.1,false);
   }else{
-    box(house,W+.1,.45,.02,mat.plinth,W/2,.22,-.21,false); box(house,W+.1,.45,.02,mat.plinth,W/2,.22,D+.21,false);
-    box(house,.02,.45,D,mat.plinth,-.21,.22,D/2,false); box(house,.02,.45,D,mat.plinth,W+.21,.22,D/2,false);
+    const inHouse=(px,pz)=>ROOMS.some(r=>!r.out&&px>r.x+.01&&px<r.x+r.w-.01&&pz>r.y+.01&&pz<r.y+r.h-.01)
+      ||(px>ANNEX.x+.01&&px<ANNEX.x+ANNEX.w-.01&&pz>ANNEX.y+.01&&pz<ANNEX.y+ANNEX.h-.01);
+    WALLS.filter(w=>w.ext&&!w.gar).forEach(w=>{
+      const hor=w.a[1]===w.b[1], c=hor?w.a[1]:w.a[0], ex=w.ex||[0,0];
+      const s=(hor?w.a[0]:w.a[1])-ex[0], e=(hor?w.b[0]:w.b[1])+ex[1], mid=(s+e)/2;
+      const neg=hor?!inHouse(mid,c-.25):!inHouse(c-.25,mid), pos=hor?!inHouse(mid,c+.25):!inHouse(c+.25,mid);
+      const dirs=[]; if(neg)dirs.push(-1); if(pos)dirs.push(1);
+      dirs.forEach(dir=>{
+        const off=c+dir*(w.t/2+.01);
+        let cur=s;
+        (w.o||[]).filter(q=>q.s===0).slice().sort((a,b)=>a.p-b.p).forEach(q=>{
+          const lo=q.p-q.w/2, hi=q.p+q.w/2;
+          if(lo-cur>.05){const len=lo-cur,m2=(cur+lo)/2;box(house,hor?len:.02,.45,hor?.02:len,mat.plinth,hor?m2:off,.22,hor?off:m2,false);}
+          cur=Math.max(cur,hi);
+        });
+        if(e-cur>.05){const len=e-cur,m2=(cur+e)/2;box(house,hor?len:.02,.45,hor?.02:len,mat.plinth,hor?m2:off,.22,hor?off:m2,false);}
+      });
+    });
   }
-  // ниша входа: деревянная облицовка, подсветка, ступени
+  // ниша входа и терраса: деревянная облицовка, подсветка, ступени
   const slats=(x0,x1,z,face,y1=H)=>{ for(let x=x0;x<=x1;x+=.12)box(house,.07,y1-F,.06,mat.wood,x,(F+y1)/2,z+face*.25,false); };
   const terrace=ROOMS.find(r=>r.out);
-  if(terrace)slats(terrace.x+.4,terrace.x+terrace.w-.4,terrace.y+terrace.h,-1);
-  const N_=NICHE, nb=N_.y+.21;
-  box(house,.3,H-F,.03,mat.wood,N_.x+.35,(H+F)/2,nb,false); box(house,.3,H-F,.03,mat.wood,N_.x+N_.w-.35,(H+F)/2,nb,false);
-  box(house,1.0,H-F-2.1-F+.15,.03,mat.wood,N_.x+1,(F+2.1+H)/2,nb,false);
-  box(house,.03,H-F,N_.h-.2,mat.wood,N_.x+.215,(H+F)/2,N_.y+.2+(N_.h-.2)/2,false); box(house,.03,H-F,N_.h-.2,mat.wood,N_.x+N_.w-.215,(H+F)/2,N_.y+.2+(N_.h-.2)/2,false);
+  if(model.original){
+    if(terrace)slats(terrace.x+.4,terrace.x+terrace.w-.4,terrace.y+terrace.h,-1);
+  }else if(terrace){
+    WALLS.filter(w=>!w.gar).forEach(w=>{
+      const hor=w.a[1]===w.b[1], c=hor?w.a[1]:w.a[0], s=hor?w.a[0]:w.a[1], e=hor?w.b[0]:w.b[1];
+      if(hor&&Math.abs(c-(terrace.y+terrace.h))<.01&&e>terrace.x+.1&&s<terrace.x+terrace.w-.1){
+        const u0=Math.max(s,terrace.x)+.32, u1=Math.min(e,terrace.x+terrace.w)-.32;
+        for(let u=u0;u<=u1;u+=.12)box(house,.07,H-F,.06,mat.wood,u,(F+H)/2,c-.23,false);
+      }
+      if(!hor&&Math.abs(c-terrace.x)<.01&&e>terrace.y+.1&&s<terrace.y+terrace.h-.1){
+        let cur=Math.max(s,terrace.y)+.32, end=Math.min(e,terrace.y+terrace.h)-.32;
+        (w.o||[]).slice().sort((a,b)=>a.p-b.p).forEach(q=>{
+          for(let u=cur;u<=q.p-q.w/2-.12;u+=.12)box(house,.06,H-F,.07,mat.wood,c+.23,(F+H)/2,u,false);
+          cur=Math.max(cur,q.p+q.w/2+.12);
+        });
+        for(let u=cur;u<=end;u+=.12)box(house,.06,H-F,.07,mat.wood,c+.23,(F+H)/2,u,false);
+      }
+    });
+  }
+  const N_=NICHE, nb=N_.y+.21, doorW=1.0, sideW=Math.max(.05,(N_.w-.4-doorW)/2);
+  box(house,sideW,H-F,.03,mat.wood,N_.x+.2+sideW/2,(H+F)/2,nb,false);
+  box(house,sideW,H-F,.03,mat.wood,N_.x+N_.w-.2-sideW/2,(H+F)/2,nb,false);
+  box(house,doorW,H-F-2.1+.15,.03,mat.wood,N_.x+N_.w/2,(F+2.1+H)/2,nb,false);
+  box(house,.03,H-F,N_.h-.2,mat.wood,N_.x+.215,(H+F)/2,N_.y+.2+(N_.h-.2)/2,false);
+  box(house,.03,H-F,N_.h-.2,mat.wood,N_.x+N_.w-.215,(H+F)/2,N_.y+.2+(N_.h-.2)/2,false);
   box(house,N_.w-.4,.03,N_.h-.2,mat.woodD,N_.x+N_.w/2,H-.02,N_.y+.2+(N_.h-.2)/2,false);
   [N_.x+.2,N_.x+N_.w-.2].forEach(x=>box(house,.04,H-.3,.04,led,x,H/2,D+.21,false));
   box(house,N_.w-.4,F,N_.h-.2,mat.conc,N_.x+N_.w/2,F/2+.01,N_.y+.2+(N_.h-.2)/2,false);
-  box(house,2.2,F*.66,.5,mat.conc,NICHE.x+NICHE.w/2,F*.33,D+.25); box(house,2.5,F*.33,.4,mat.conc,NICHE.x+NICHE.w/2,F*.16,D+.7);
-  if(terrace){const tx=terrace.x+terrace.w/2,tz=terrace.y-.48;box(house,2.2,F,.55,mat.conc,tx,F/2,tz); box(house,2.5,.07,.4,mat.conc,tx,.035,tz-.47)}
-  const posts=model.original?[[W-.1,.1],[W-.1,3.65],[9.9,.1],[6.1,.1]]:[[terrace.x+terrace.w-.1,terrace.y+.1],[terrace.x+terrace.w-.1,terrace.y+terrace.h-.1],[terrace.x+.1,terrace.y+.1]];
+  box(house,2.2,F*.66,.45,mat.conc,N_.x+N_.w/2,F*.33,D+.225); box(house,2.5,F*.33,.4,mat.conc,N_.x+N_.w/2,F*.16,D+.65);
+  if(terrace){
+    const ts=model.terraceSteps||{x:terrace.x+terrace.w/2,y:terrace.y};
+    const tz=ts.y-.48;
+    box(house,2.2,F,.55,mat.conc,ts.x,F/2,tz); box(house,2.5,.07,.4,mat.conc,ts.x,.035,tz-.47);
+  }
+  const posts=model.original?[[W-.1,.1],[W-.1,3.65],[9.9,.1],[6.1,.1]]:(function(){
+    if(!terrace)return [];
+    const p=[[terrace.x+terrace.w-.1,terrace.y+.1],[terrace.x+.1,terrace.y+.1]];
+    if(terrace.w>4.2)p.push([terrace.x+terrace.w/2,terrace.y+.1]);
+    if(!(ANNEX.x===terrace.x+terrace.w&&ANNEX.y<=terrace.y+terrace.h))p.push([terrace.x+terrace.w-.1,terrace.y+terrace.h-.1]);
+    return p;
+  })();
   posts.forEach(p=>box(house,.16,H,.16,mat.dark,p[0],H/2,p[1]));
-  [[NICHE.x+.32,D-.85],[NICHE.x+NICHE.w-.32,D-.85]].forEach(p=>box(house,.06,.16,.1,glow,p[0],2.1,p[1],false));
+  [[N_.x+.2+sideW/2,N_.y+.25],[N_.x+N_.w-.2-sideW/2,N_.y+.25]].forEach(p=>box(house,.06,.16,.1,glow,p[0],2.1,p[1],false));
   // гараж: пол, крыша с деревянной подшивкой
   const A=ANNEX, gr=new THREE.Group(); house.add(gr);
   box(gr,A.w,F,A.h,mat.conc,A.x+A.w/2,F/2,A.y+A.h/2);
   box(gr,A.w,.02,A.h,mat.fl.tile,A.x+A.w/2,F+.01,A.y+A.h/2,false);
-  box(gr,.02,.45,A.h+.3,mat.plinth,A.x-.16,.22,A.y+A.h/2,false);
+  const gPlinthX=leftGarage?A.x-.16:A.x+A.w+.16;
+  box(gr,.02,.45,A.h+.3,mat.plinth,gPlinthX,.22,A.y+A.h/2,false);
+  box(gr,A.w+.3,.45,.02,mat.plinth,A.x+A.w/2,.22,A.y-.16,false);
   const gRoof=new THREE.Group(); gr.add(gRoof);
-  box(gRoof,A.w+.75,.14,A.h+.7,mat.dark,A.x+A.w/2-.15,H+.12,A.y+A.h/2+.15);
-  box(gRoof,A.w+.75,.03,A.h+.7,mat.woodD,A.x+A.w/2-.15,H+.035,A.y+A.h/2+.15,false);
-  const flue=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,1.3,12),mat.frame); flue.position.set(A.x+.5,H+.8,A.y+.5); gRoof.add(flue);
+  const gxOff=leftGarage?-.15:.15;
+  box(gRoof,A.w+.75,.14,A.h+.7,mat.dark,A.x+A.w/2+gxOff,H+.12,A.y+A.h/2+.15);
+  box(gRoof,A.w+.75,.03,A.h+.7,mat.woodD,A.x+A.w/2+gxOff,H+.035,A.y+A.h/2+.15,false);
+  const boil3=FUR.find(f=>f.boil);
+  const flue=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,1.3,12),mat.frame); flue.position.set(boil3?boil3.x+boil3.w/2:A.x+.5,H+.8,boil3?boil3.y+boil3.d/2:A.y+.5); gRoof.add(flue);
   // мебель
   FUR.forEach(f=>{
     const m=M(f.col,.7); let o;
@@ -2141,7 +2363,7 @@ function init3d(){
     lamps.forEach(l=>l.intensity=on?l.userData.i:0);
   }
   // точки обзора в мировых координатах (дом в центре)
-  const span=Math.max(W,D,maxX-minX),views=model.original?{main:[[-13,9.5,22],[-1.5,1.2,2.5]],front:[[.5,4.8,20],[.5,1.3,3]],back:[[14,6,-12],[1.5,1.4,-2]],top:[[0.01,30,4],[-1,0,4]]}:{main:[[-span*.9,span*.65,span*1.25],[0,1.2,0]],front:[[0,5,span*1.2],[0,1.3,0]],back:[[span,7,-span*.85],[0,1.4,0]],top:[[.01,span*2.1,0],[0,0,0]]};
+  const span=Math.max(W,D,maxX-minX),tx=(terrace?terrace.x+terrace.w/2:W/2)-(minX+maxX)/2,views=model.original?{main:[[-13,9.5,22],[-1.5,1.2,2.5]],front:[[.5,4.8,20],[.5,1.3,3]],back:[[14,6,-12],[1.5,1.4,-2]],top:[[0.01,30,4],[-1,0,4]]}:{main:[[-span*.92,span*.68,span*1.22],[0,1.0,0]],front:[[0,5.2,span*1.15],[0,1.2,0]],back:[[tx+5.5,5.2,-D/2-8.5],[tx-1,1.3,-D/2+1.5]],top:[[0,span*2.0,.25],[0,0,0]]};
   const nar=()=>stage.clientWidth<600;
   function fly(key){
     const v=views[key], k=nar()&&key!=='top'?1.45:1, p0=camera.position.clone(), t0=controls.target.clone();
